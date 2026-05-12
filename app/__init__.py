@@ -24,4 +24,7 @@ def create_app():
     from app.main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
+    from app.iperc import iperc as iperc_blueprint
+    app.register_blueprint(iperc_blueprint)
+
     return app

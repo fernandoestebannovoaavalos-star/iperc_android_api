@@ -70,3 +70,19 @@ class PeligroBase(db.Model):
     nivel_con = db.Column(db.String(50), nullable=False)
     responsable = db.Column(db.String(100), nullable=True)
     requisito_legal = db.Column(db.String(100), nullable=True)
+
+
+class RegistroIPERC(db.Model):
+    __tablename__ = 'registros_iperc'
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(30), unique=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    area_id = db.Column(db.Integer, db.ForeignKey('areas.id'), nullable=False)
+    actividad_id = db.Column(db.Integer, db.ForeignKey('actividades.id'), nullable=False)
+    estado = db.Column(db.String(20), default='pendiente')
+    lat = db.Column(db.Float, nullable=True)
+    lon = db.Column(db.Float, nullable=True)
+    geo_validado = db.Column(db.Boolean, default=False)
+    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    supervisor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    
