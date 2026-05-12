@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required
 from app.auth import auth
-from app.models import Usuario
+from app.models import Usuario, Cargo, Obra
 from app import db
 import bcrypt
 
@@ -19,18 +19,22 @@ def login():
 
 @auth.route('/registro', methods=['GET', 'POST'])
 def registro():
+    cargos = Cargo.query.all()
+    obras = Obra.query.filter_by(activo=True).all()
     if request.method == 'POST':
         nombre = request.form.get('nombre')
         apellido = request.form.get('apellido')
         dni = request.form.get('dni')
-        cargo = request.form.get('cargo')
+        cargo_id = request.form.get('cargo_id')
+        obra_id = request.form.get('obra_id')
         password = request.form.get('password')
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         usuario = Usuario(
             nombre=nombre,
             apellido=apellido,
             dni=dni,
-            cargo=cargo,
+            cargo_id=cargo_id,
+            obra_id=obra_id,
             password_hash=password_hash,
             rol='trabajador'
         )
@@ -38,7 +42,7 @@ def registro():
         db.session.commit()
         flash('Registro exitoso. Inicia sesión.')
         return redirect(url_for('auth.login'))
-    return render_template('auth/registro.html')
+    return render_template('auth/registro.html', cargos=cargos, obras=obras)
 
 @auth.route('/logout')
 @login_required

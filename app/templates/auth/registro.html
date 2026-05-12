@@ -30,13 +30,20 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Cargo</label>
-                        <select name="cargo" class="form-select" required>
+                        <select name="cargo_id" class="form-select" required>
                             <option value="">-- Seleccionar --</option>
-                            <option>Obrero de campo</option>
-                            <option>Operario</option>
-                            <option>Maestro de obra</option>
-                            <option>Supervisor SST</option>
-                            <option>Ingeniero</option>
+                            {% for cargo in cargos %}
+                            <option value="{{ cargo.id }}">{{ cargo.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Obra</label>
+                        <select name="obra_id" class="form-select" required>
+                            <option value="">-- Seleccionar --</option>
+                            {% for obra in obras %}
+                            <option value="{{ obra.id }}">{{ obra.nombre }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
