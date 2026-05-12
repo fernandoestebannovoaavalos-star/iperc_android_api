@@ -10,10 +10,6 @@ class Cargo(db.Model):
     __tablename__ = 'cargos'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
-    usuarios = db.relationship('Usuario', backref='cargo_rel', lazy=True)
-
-    def __repr__(self):
-        return f'<Cargo {self.nombre}>'
 
 class Obra(db.Model):
     __tablename__ = 'obras'
@@ -25,9 +21,6 @@ class Obra(db.Model):
     lon_centro = db.Column(db.Float, nullable=True)
     radio_perimetro = db.Column(db.Integer, default=100)
     activo = db.Column(db.Boolean, default=True)
-
-    def __repr__(self):
-        return f'<Obra {self.nombre}>'
 
 class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuarios'
@@ -43,5 +36,37 @@ class Usuario(UserMixin, db.Model):
     activo = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def __repr__(self):
-        return f'<Usuario {self.nombre} {self.apellido}>'
+class Area(db.Model):
+    __tablename__ = 'areas'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    actividades = db.relationship('Actividad', backref='area', lazy=True)
+
+class Actividad(db.Model):
+    __tablename__ = 'actividades'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(150), nullable=False)
+    area_id = db.Column(db.Integer, db.ForeignKey('areas.id'), nullable=False)
+    peligros = db.relationship('PeligroBase', backref='actividad', lazy=True)
+
+class TipoPeligro(db.Model):
+    __tablename__ = 'tipos_peligro'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False)
+
+class PeligroBase(db.Model):
+    __tablename__ = 'peligros_base'
+    id = db.Column(db.Integer, primary_key=True)
+    actividad_id = db.Column(db.Integer, db.ForeignKey('actividades.id'), nullable=False)
+    tipo_peligro_id = db.Column(db.Integer, db.ForeignKey('tipos_peligro.id'), nullable=False)
+    descripcion = db.Column(db.Text, nullable=False)
+    riesgo_consecuencia = db.Column(db.Text, nullable=False)
+    p_sin = db.Column(db.Integer, nullable=False)
+    s_sin = db.Column(db.Integer, nullable=False)
+    nivel_sin = db.Column(db.String(50), nullable=False)
+    medidas_control = db.Column(db.Text, nullable=False)
+    p_con = db.Column(db.Integer, nullable=False)
+    s_con = db.Column(db.Integer, nullable=False)
+    nivel_con = db.Column(db.String(50), nullable=False)
+    responsable = db.Column(db.String(100), nullable=True)
+    requisito_legal = db.Column(db.String(100), nullable=True)
