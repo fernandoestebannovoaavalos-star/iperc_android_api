@@ -17,15 +17,28 @@
     {% if current_user.is_authenticated %}
     <nav class="navbar navbar-dark bg-dark">
         <div class="container">
-            <span class="navbar-brand">
+
+           <span class="navbar-brand">
                 <i class="bi bi-shield-check"></i> IPERC Digital
             </span>
             <div class="d-flex align-items-center gap-3">
-                <span class="text-white">{{ current_user.nombre }}</span>
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
-                    Salir
-                </a>
-            </div>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            {% if current_user.rol in ['supervisor', 'admin'] %}
+            <a href="{{ url_for('supervisor.panel') }}" class="btn btn-warning btn-sm">
+            <i class="bi bi-clipboard-check"></i> Panel Supervisor
+        </a>
+        {% endif %}
+        <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-plus"></i> Nuevo IPERC
+        </a>
+        <span class="text-white">{{ current_user.nombre }}</span>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        Salir
+        </a>
+        </div>
+
         </div>
     </nav>
     {% endif %}

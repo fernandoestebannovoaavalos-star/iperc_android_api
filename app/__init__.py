@@ -27,4 +27,7 @@ def create_app():
     from app.iperc import iperc as iperc_blueprint
     app.register_blueprint(iperc_blueprint)
 
+    from app.supervisor import supervisor as supervisor_blueprint
+    app.register_blueprint(supervisor_blueprint)
+
     return app

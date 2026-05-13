@@ -1,0 +1,54 @@
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_required, current_user
+from app.supervisor import supervisor
+from app.models import RegistroIPERC, Usuario
+from app import db
+from functools import wraps
+
+def solo_supervisor(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if current_user.rol not in ['supervisor', 'admin']:
+            flash('Acceso denegado. Solo supervisores.')
+            return redirect(url_for('main.dashboard'))
+        return f(*args, **kwargs)
+    return decorated
+
+@supervisor.route('/supervisor/panel')
+@login_required
+@solo_supervisor
+def panel():
+    pendientes = RegistroIPERC.query.filter_by(
+        estado='pendiente'
+    ).order_by(RegistroIPERC.fecha_registro.desc()).all()
+
+    aprobados = RegistroIPERC.query.filter_by(
+        estado='aprobado'
+    ).order_by(RegistroIPERC.fecha_registro.desc()).limit(10).all()
+
+    return render_template('supervisor/panel.html',
+        pendientes=pendientes,
+        aprobados=aprobados
+    )
+
+@supervisor.route('/supervisor/aprobar/<int:id>', methods=['POST'])
+@login_required
+@solo_supervisor
+def aprobar(id):
+    registro = RegistroIPERC.query.get_or_404(id)
+    registro.estado = 'aprobado'
+    registro.supervisor_id = current_user.id
+    db.session.commit()
+    flash(f'✓ IPERC {registro.codigo} aprobado correctamente.')
+    return redirect(url_for('supervisor.panel'))
+
+@supervisor.route('/supervisor/observar/<int:id>', methods=['POST'])
+@login_required
+@solo_supervisor
+def observar(id):
+    registro = RegistroIPERC.query.get_or_404(id)
+    registro.estado = 'observado'
+    registro.supervisor_id = current_user.id
+    db.session.commit()
+    flash(f'⚠ IPERC {registro.codigo} marcado como observado.')
+    return redirect(url_for('supervisor.panel'))

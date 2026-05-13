@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Panel Supervisor{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h4 class="fw-bold">
+            <i class="bi bi-clipboard-check" style="color:#F97316;"></i>
+            Panel de Supervisión
+        </h4>
+        <p class="text-muted">Revisa y aprueba los registros IPERC pendientes</p>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- PENDIENTES -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-warning text-dark">
+        <strong><i class="bi bi-clock-history"></i> Pendientes de aprobación ({{ pendientes|length }})</strong>
+    </div>
+    <div class="card-body p-0">
+        {% if pendientes %}
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Código</th>
+                    <th>Trabajador</th>
+                    <th>Área</th>
+                    <th>Actividad</th>
+                    <th>GPS</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in pendientes %}
+                <tr>
+                    <td><small class="font-monospace">{{ r.codigo }}</small></td>
+                    <td>{{ r.registrado_por.nombre }} {{ r.registrado_por.apellido }}</td>
+                    <td>{{ r.area.nombre }}</td>
+                    <td><small>{{ r.actividad.nombre }}</small></td>
+                    <td>
+                        {% if r.geo_validado %}
+                            <span class="badge bg-success">✓ Validado</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Sin GPS</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                    <td>
+                        <form method="POST" action="/supervisor/aprobar/{{ r.id }}" style="display:inline;">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="bi bi-check"></i> Aprobar
+                            </button>
+                        </form>
+                        <form method="POST" action="/supervisor/observar/{{ r.id }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="bi bi-x"></i> Observar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center p-4 text-muted">
+            <i class="bi bi-check-circle" style="font-size:2rem;color:#22C55E;"></i>
+            <p class="mt-2">No hay registros pendientes ✓</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- APROBADOS -->
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white">
+        <strong><i class="bi bi-check-circle"></i> Últimos aprobados ({{ aprobados|length }})</strong>
+    </div>
+    <div class="card-body p-0">
+        {% if aprobados %}
+        <table class="table table-sm mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Código</th>
+                    <th>Trabajador</th>
+                    <th>Área</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in aprobados %}
+                <tr>
+                    <td><small class="font-monospace">{{ r.codigo }}</small></td>
+                    <td>{{ r.registrado_por.nombre }} {{ r.registrado_por.apellido }}</td>
+                    <td>{{ r.area.nombre }}</td>
+                    <td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center p-3 text-muted">
+            <small>Sin registros aprobados aún</small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
