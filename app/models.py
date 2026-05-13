@@ -85,4 +85,7 @@ class RegistroIPERC(db.Model):
     geo_validado = db.Column(db.Boolean, default=False)
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
     supervisor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    area = db.relationship('Area', foreign_keys=[area_id])
+    actividad = db.relationship('Actividad', foreign_keys=[actividad_id])
+    registrado_por = db.relationship('Usuario', foreign_keys=[usuario_id])
     
