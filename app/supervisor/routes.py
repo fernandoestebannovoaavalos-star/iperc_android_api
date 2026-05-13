@@ -2,21 +2,11 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.supervisor import supervisor
 from app.models import RegistroIPERC, Usuario
-from app import db
-from functools import wraps
-
-def solo_supervisor(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if current_user.rol not in ['supervisor', 'admin']:
-            flash('Acceso denegado. Solo supervisores.')
-            return redirect(url_for('main.dashboard'))
-        return f(*args, **kwargs)
-    return decorated
+from app import db, solo_rol
 
 @supervisor.route('/supervisor/panel')
 @login_required
-@solo_supervisor
+@solo_rol('supervisor', 'admin')
 def panel():
     pendientes = RegistroIPERC.query.filter_by(
         estado='pendiente'
@@ -33,7 +23,7 @@ def panel():
 
 @supervisor.route('/supervisor/aprobar/<int:id>', methods=['POST'])
 @login_required
-@solo_supervisor
+@solo_rol('supervisor', 'admin')
 def aprobar(id):
     registro = RegistroIPERC.query.get_or_404(id)
     registro.estado = 'aprobado'
@@ -44,7 +34,7 @@ def aprobar(id):
 
 @supervisor.route('/supervisor/observar/<int:id>', methods=['POST'])
 @login_required
-@solo_supervisor
+@solo_rol('supervisor', 'admin')
 def observar(id):
     registro = RegistroIPERC.query.get_or_404(id)
     registro.estado = 'observado'

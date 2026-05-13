@@ -2,11 +2,12 @@ from flask import render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.iperc import iperc
 from app.models import Area, Actividad, PeligroBase, RegistroIPERC
-from app import db
+from app import db, solo_rol
 from datetime import datetime
 
 @iperc.route('/iperc/nuevo')
 @login_required
+@solo_rol('trabajador', 'supervisor', 'admin')
 def nuevo():
     areas = Area.query.all()
     return render_template('main/iperc_continuo.html', areas=areas)
@@ -37,6 +38,7 @@ def get_peligros(actividad_id):
 
 @iperc.route('/iperc/guardar', methods=['POST'])
 @login_required
+@solo_rol('trabajador', 'supervisor', 'admin')
 def guardar():
     area_id = request.form.get('area_id')
     actividad_id = request.form.get('actividad_id')
