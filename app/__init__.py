@@ -44,4 +44,7 @@ def create_app():
     from app.supervisor import supervisor as supervisor_blueprint
     app.register_blueprint(supervisor_blueprint)
 
+    from app.reportes import reportes as reportes_blueprint
+    app.register_blueprint(reportes_blueprint)
+
     return app

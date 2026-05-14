@@ -102,6 +102,12 @@
                     <td>{{ r.registrado_por.nombre }} {{ r.registrado_por.apellido }}</td>
                     <td>{{ r.area.nombre }}</td>
                     <td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                    <td>
+                        <a href="{{ url_for('reportes.generar_pdf', registro_id=r.id) }}" 
+                        class="btn btn-outline-danger btn-sm" target="_blank">
+                            <i class="bi bi-file-pdf"></i> PDF
+                        </a>
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>

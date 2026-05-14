@@ -96,7 +96,15 @@
                                     <span class="badge bg-danger">Observado</span>
                                 {% endif %}
                             </td>
+                            
+                            <th>PDF</th>
                             <td><small>{{ r.fecha_registro.strftime('%d/%m %H:%M') }}</small></td>
+                            <td>
+                                <a href="{{ url_for('reportes.generar_pdf', registro_id=r.id) }}" 
+                                class="btn btn-outline-danger btn-sm" target="_blank">
+                                    <i class="bi bi-file-pdf"></i> PDF
+                                </a>
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>
