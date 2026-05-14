@@ -4,6 +4,8 @@ from app.iperc import iperc
 from app.models import Area, Actividad, PeligroBase, RegistroIPERC
 from app import db, solo_rol
 from datetime import datetime
+from app.models import Area, Actividad, PeligroBase, RegistroIPERC, FirmaDigital
+import base64
 
 @iperc.route('/iperc/nuevo')
 @login_required
@@ -62,4 +64,30 @@ def guardar():
     db.session.add(registro)
     db.session.commit()
     flash('✓ IPERC registrado exitosamente. Pendiente de aprobación del supervisor.')
+    return redirect(url_for('iperc.firmar', registro_id=registro.id))
+
+@iperc.route('/iperc/firmar/<int:registro_id>', methods=['GET'])
+@login_required
+def firmar(registro_id):
+    registro = RegistroIPERC.query.get_or_404(registro_id)
+    return render_template('main/firma.html', registro=registro)
+
+@iperc.route('/iperc/guardar_firma', methods=['POST'])
+@login_required
+def guardar_firma():
+    registro_id = request.form.get('registro_id')
+    firma_data = request.form.get('firma_data')
+    lat = request.form.get('lat')
+    lon = request.form.get('lon')
+
+    firma = FirmaDigital(
+        registro_id=registro_id,
+        usuario_id=current_user.id,
+        firma_imagen=firma_data,
+        lat=float(lat) if lat else None,
+        lon=float(lon) if lon else None
+    )
+    db.session.add(firma)
+    db.session.commit()
+    flash('✓ Firma registrada correctamente.')
     return redirect(url_for('main.dashboard'))

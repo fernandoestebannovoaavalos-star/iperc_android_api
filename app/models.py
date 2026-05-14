@@ -89,3 +89,14 @@ class RegistroIPERC(db.Model):
     actividad = db.relationship('Actividad', foreign_keys=[actividad_id])
     registrado_por = db.relationship('Usuario', foreign_keys=[usuario_id])
     
+   
+class FirmaDigital(db.Model):
+    __tablename__ = 'firmas_digitales'
+    id = db.Column(db.Integer, primary_key=True)
+    registro_id = db.Column(db.Integer, db.ForeignKey('registros_iperc.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    firma_imagen = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    lat = db.Column(db.Float, nullable=True)
+    lon = db.Column(db.Float, nullable=True)
+    usuario = db.relationship('Usuario', foreign_keys=[usuario_id])
