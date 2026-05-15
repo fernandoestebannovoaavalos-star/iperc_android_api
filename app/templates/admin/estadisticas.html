@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}Estadísticas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h4 class="fw-bold">
+            <i class="bi bi-graph-up" style="color:#F97316;"></i>
+            Estadísticas del Sistema
+        </h4>
+        <p class="text-muted">Dashboard gerencial — IPERC Digital</p>
+    </div>
+    <div class="col-auto">
+        <a href="/admin/panel" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Volver al Panel
+        </a>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0" style="border-top:4px solid #F97316 !important;">
+            <div class="card-body">
+                <i class="bi bi-file-earmark-text" style="font-size:2rem;color:#F97316;"></i>
+                <h2 class="fw-bold mt-2">{{ total_iperc }}</h2>
+                <small class="text-muted">Total IPERC</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0" style="border-top:4px solid #22C55E !important;">
+            <div class="card-body">
+                <i class="bi bi-check-circle" style="font-size:2rem;color:#22C55E;"></i>
+                <h2 class="fw-bold mt-2">{{ total_aprobados }}</h2>
+                <small class="text-muted">Aprobados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0" style="border-top:4px solid #FACC15 !important;">
+            <div class="card-body">
+                <i class="bi bi-clock-history" style="font-size:2rem;color:#FACC15;"></i>
+                <h2 class="fw-bold mt-2">{{ total_pendientes }}</h2>
+                <small class="text-muted">Pendientes</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0" style="border-top:4px solid #3B82F6 !important;">
+            <div class="card-body">
+                <i class="bi bi-people" style="font-size:2rem;color:#3B82F6;"></i>
+                <h2 class="fw-bold mt-2">{{ total_usuarios }}</h2>
+                <small class="text-muted">Usuarios</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GRÁFICOS -->
+<div class="row g-3">
+    <!-- Gráfico por Área -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <strong><i class="bi bi-bar-chart"></i> IPERC por Área</strong>
+            </div>
+            <div class="card-body">
+                <canvas id="chartArea" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico por Estado -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <strong><i class="bi bi-pie-chart"></i> IPERC por Estado</strong>
+            </div>
+            <div class="card-body">
+                <canvas id="chartEstado" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico por Trabajador -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <strong><i class="bi bi-person-bar-chart"></i> IPERC por Trabajador</strong>
+            </div>
+            <div class="card-body">
+                <canvas id="chartTrabajador" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Datos desde Flask
+const datosArea = {
+    labels: {{ por_area | map(attribute=0) | list | tojson }},
+    datos: {{ por_area | map(attribute=1) | list | tojson }}
+};
+
+const datosEstado = {
+    labels: {{ por_estado | map(attribute=0) | list | tojson }},
+    datos: {{ por_estado | map(attribute=1) | list | tojson }}
+};
+
+const datosTrabajador = {
+    labels: {{ por_trabajador | map(attribute=0) | list | tojson }},
+    datos: {{ por_trabajador | map(attribute=2) | list | tojson }}
+};
+
+// Colores
+const colores = ['#F97316','#3B82F6','#22C55E','#FACC15','#A855F7','#EF4444','#14B8A6','#F43F5E'];
+
+// Gráfico por Área
+new Chart(document.getElementById('chartArea'), {
+    type: 'bar',
+    data: {
+        labels: datosArea.labels,
+        datasets: [{
+            label: 'Cantidad de IPERC',
+            data: datosArea.datos,
+            backgroundColor: colores,
+            borderRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+
+// Gráfico por Estado
+new Chart(document.getElementById('chartEstado'), {
+    type: 'doughnut',
+    data: {
+        labels: datosEstado.labels,
+        datasets: [{
+            data: datosEstado.datos,
+            backgroundColor: ['#22C55E','#FACC15','#EF4444'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+// Gráfico por Trabajador
+new Chart(document.getElementById('chartTrabajador'), {
+    type: 'bar',
+    data: {
+        labels: datosTrabajador.labels,
+        datasets: [{
+            label: 'IPERC registrados',
+            data: datosTrabajador.datos,
+            backgroundColor: '#F97316',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+</script>
+{% endblock %}

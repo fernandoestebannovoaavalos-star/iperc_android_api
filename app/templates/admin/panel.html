@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% block title %}Panel Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h4 class="fw-bold">
+            <i class="bi bi-gear" style="color:#F97316;"></i>
+            Panel de Administración
+        </h4>
+        <p class="text-muted">Gestión de usuarios, obras y estadísticas</p>
+    </div>
+    <div class="col-auto">
+        <a href="/admin/reportes" class="btn btn-primary">
+            <i class="bi bi-bar-chart"></i> Ver Reportes
+        </a>
+
+        <a href="/admin/estadisticas" class="btn btn-success">
+            <i class="bi bi-graph-up"></i> Estadísticas
+        </a>
+
+    </div>
+
+
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- ESTADÍSTICAS -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <i class="bi bi-people" style="font-size:2rem;color:#F97316;"></i>
+                <h3 class="fw-bold mt-2">{{ usuarios|length }}</h3>
+                <small class="text-muted">Usuarios</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <i class="bi bi-building" style="font-size:2rem;color:#3B82F6;"></i>
+                <h3 class="fw-bold mt-2">{{ obras|length }}</h3>
+                <small class="text-muted">Obras</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <i class="bi bi-file-earmark-text" style="font-size:2rem;color:#22C55E;"></i>
+                <h3 class="fw-bold mt-2">{{ total_iperc }}</h3>
+                <small class="text-muted">Total IPERC</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <i class="bi bi-clock-history" style="font-size:2rem;color:#FACC15;"></i>
+                <h3 class="fw-bold mt-2">{{ total_pendientes }}</h3>
+                <small class="text-muted">Pendientes</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- USUARIOS -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <strong><i class="bi bi-people"></i> Gestión de Usuarios</strong>
+            </div>
+            <div class="card-body p-0">
+                <div style="overflow-x:auto;">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>DNI</th>
+                            <th>Rol</th>
+                            <th>Cargo</th>
+                            <th>Estado</th>
+                            <th>Cambiar Rol</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for u in usuarios %}
+                        <tr>
+                            <td>{{ u.nombre }} {{ u.apellido }}</td>
+                            <td><small class="font-monospace">{{ u.dni }}</small></td>
+                            <td>
+                                {% if u.rol == 'admin' %}
+                                    <span class="badge bg-danger">Admin</span>
+                                {% elif u.rol == 'supervisor' %}
+                                    <span class="badge bg-warning text-dark">Supervisor</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Trabajador</span>
+                                {% endif %}
+                            </td>
+                            <td><small>{{ u.cargo_id or '-' }}</small></td>
+                            <td>
+                                {% if u.activo %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="/admin/usuario/rol/{{ u.id }}" style="display:flex;gap:4px;">
+                                    <select name="rol" class="form-select form-select-sm" style="width:130px;">
+                                        <option value="trabajador" {% if u.rol=='trabajador' %}selected{% endif %}>Trabajador</option>
+                                        <option value="supervisor" {% if u.rol=='supervisor' %}selected{% endif %}>Supervisor</option>
+                                        <option value="admin" {% if u.rol=='admin' %}selected{% endif %}>Admin</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">✓</button>
+                                </form>
+                            </td>
+                            <td>
+                                {% if u.id != current_user.id %}
+                                <form method="POST" action="/admin/usuario/toggle/{{ u.id }}">
+                                    <button type="submit" class="btn btn-sm {% if u.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                                        {% if u.activo %}Desactivar{% else %}Activar{% endif %}
+                                    </button>
+                                </form>
+                                {% else %}
+                                <small class="text-muted">Tú mismo</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OBRAS -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <strong><i class="bi bi-building"></i> Gestión de Obras</strong>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Nombre</th><th>Estado</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for o in obras %}
+                        <tr>
+                            <td>{{ o.nombre }}<br><small class="text-muted">{{ o.empresa }}</small></td>
+                            <td>
+                                {% if o.activo %}
+                                    <span class="badge bg-success">Activa</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactiva</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="/admin/obra/toggle/{{ o.id }}">
+                                    <button type="submit" class="btn btn-sm {% if o.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                                        {% if o.activo %}Desactivar{% else %}Activar{% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVA OBRA -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <strong><i class="bi bi-plus-circle"></i> Nueva Obra</strong>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/obra/nueva">
+                    <div class="mb-2">
+                        <label class="form-label">Nombre de la obra</label>
+                        <input type="text" name="nombre" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Empresa</label>
+                        <input type="text" name="empresa" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Dirección</label>
+                        <input type="text" name="direccion" class="form-control form-control-sm">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col">
+                            <label class="form-label">Latitud</label>
+                            <input type="number" step="any" name="lat" class="form-control form-control-sm" placeholder="-7.1638">
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Longitud</label>
+                            <input type="number" step="any" name="lon" class="form-control form-control-sm" placeholder="-78.5040">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Radio perímetro (metros)</label>
+                        <input type="number" name="radio" class="form-control form-control-sm" value="100">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus"></i> Crear Obra
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

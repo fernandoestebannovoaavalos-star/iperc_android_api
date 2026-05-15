@@ -53,6 +53,11 @@
          <i class="bi bi-list-ul"></i> Mis Registros
          </a>
 
+         {% if current_user.rol == 'admin' %}
+        <a href="{{ url_for('admin.panel') }}" class="btn btn-danger btn-sm">
+            <i class="bi bi-gear"></i> Admin
+        </a>
+        {% endif %}
 
         <span class="text-white">{{ current_user.nombre }}</span>
         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
