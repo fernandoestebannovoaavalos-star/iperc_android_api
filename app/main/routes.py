@@ -11,7 +11,6 @@ from datetime import datetime, date
 def dashboard():
     hoy = date.today()
 
-    # Contadores reales desde BD
     iperc_hoy = RegistroIPERC.query.filter(
         RegistroIPERC.usuario_id == current_user.id,
         db.func.date(RegistroIPERC.fecha_registro) == hoy
@@ -32,7 +31,6 @@ def dashboard():
         RegistroIPERC.geo_validado == True
     ).count()
 
-    # Últimos registros
     mis_registros = RegistroIPERC.query.filter_by(
         usuario_id=current_user.id
     ).order_by(RegistroIPERC.fecha_registro.desc()).limit(5).all()
@@ -45,3 +43,11 @@ def dashboard():
         geo_validados=geo_validados,
         mis_registros=mis_registros
     )
+
+@main.route('/mis-registros')
+@login_required
+def mis_registros():
+    registros = RegistroIPERC.query.filter_by(
+        usuario_id=current_user.id
+    ).order_by(RegistroIPERC.fecha_registro.desc()).all()
+    return render_template('main/mis_registros.html', registros=registros)

@@ -88,7 +88,7 @@ class RegistroIPERC(db.Model):
     area = db.relationship('Area', foreign_keys=[area_id])
     actividad = db.relationship('Actividad', foreign_keys=[actividad_id])
     registrado_por = db.relationship('Usuario', foreign_keys=[usuario_id])
-    
+    firmas = db.relationship('FirmaDigital', backref='registro', lazy=True)
    
 class FirmaDigital(db.Model):
     __tablename__ = 'firmas_digitales'

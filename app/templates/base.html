@@ -48,6 +48,12 @@
         <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-outline-light btn-sm">
         <i class="bi bi-plus"></i> Nuevo IPERC
         </a>
+
+         <a href="{{ url_for('main.mis_registros') }}" class="btn btn-outline-light btn-sm">
+         <i class="bi bi-list-ul"></i> Mis Registros
+         </a>
+
+
         <span class="text-white">{{ current_user.nombre }}</span>
         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
         Salir
