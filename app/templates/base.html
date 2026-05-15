@@ -12,6 +12,21 @@
         .btn-primary { background-color: #F97316; border-color: #F97316; }
         .btn-primary:hover { background-color: #C2520B; border-color: #C2520B; }
     </style>
+
+    <link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#F97316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IPERC Digital">
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(reg => console.log('SW registrado:', reg.scope))
+                .catch(err => console.log('SW error:', err));
+        });
+    }
+</script>
 </head>
 <body>
     {% if current_user.is_authenticated %}
