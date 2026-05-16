@@ -40,14 +40,21 @@
             <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
-            {% if current_user.rol in ['supervisor', 'admin'] %}
-            <a href="{{ url_for('supervisor.panel') }}" class="btn btn-warning btn-sm">
-            <i class="bi bi-clipboard-check"></i> Panel Supervisor
-        </a>
-        {% endif %}
-        <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-outline-light btn-sm">
-        <i class="bi bi-plus"></i> Nuevo IPERC
-        </a>
+
+           {% if current_user.rol in ['supervisor', 'admin'] %}
+            <a href="{{ url_for('supervisor.panel') }}" class="btn btn-warning btn-sm position-relative">
+                <i class="bi bi-clipboard-check"></i> Panel Supervisor
+                {% if pendientes_count > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ pendientes_count }}
+                </span>
+                {% endif %}
+            </a>
+            {% endif %}
+
+            <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-plus"></i> Nuevo IPERC
+            </a>
 
          <a href="{{ url_for('main.mis_registros') }}" class="btn btn-outline-light btn-sm">
          <i class="bi bi-list-ul"></i> Mis Registros

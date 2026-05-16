@@ -63,8 +63,42 @@ def guardar():
     )
     db.session.add(registro)
     db.session.commit()
+    
+    # Enviar email al supervisor
+    try:
+        from flask_mail import Message
+        from app import mail
+        from app.models import Usuario
+        supervisores= Usuario.query.filter(
+            Usuario.rol.in_(['supervisor', 'admin'])
+        ).all()
+        for sup in supervisores:
+            if sup.email:
+                msg=Message(subject=f'🔔 Nuevo IPERC pendiente - {registro.codigo}',
+                recipients=[sup.email],
+                html=f'''
+                <h2 style="color:#F97316;">IPERC Digital — Nuevo registro pendiente</h2>
+                <p>El trabajador <strong>{current_user.nombre} {current_user.apellido}</strong>
+                ha registrado un nuevo IPERC que requiere tu aprobación.</p>
+                <table border="1" cellpadding="8" style="border-collapse:collapse;">
+                    <tr><td><b>Código</b></td><td>{registro.codigo}</td></tr>
+                    <tr><td><b>Área</b></td><td>{registro.area.nombre}</td></tr>
+                    <tr><td><b>Actividad</b></td><td>{registro.actividad.nombre}</td></tr>
+                    <tr><td><b>Fecha</b></td><td>{registro.fecha_registro.strftime("%d/%m/%Y %H:%M")}</td></tr>
+                    <tr><td><b>GPS</b></td><td>{"✓ Validado" if registro.geo_validado else "Sin GPS"}</td></tr>
+                </table>
+                <br>
+                <p>Ingresa al sistema para aprobar o observar este registro.</p>
+                <p style="color:#999;font-size:12px;">IPERC Digital · UPN Cajamarca 2026</p>
+                ''')
+                mail.send(msg)
+
+    except Exception as e: 
+        print(f"Error enviando email: {e}")   
+    
     flash('✓ IPERC registrado exitosamente. Pendiente de aprobación del supervisor.')
     return redirect(url_for('iperc.firmar', registro_id=registro.id))
+
 
 @iperc.route('/iperc/firmar/<int:registro_id>', methods=['GET'])
 @login_required

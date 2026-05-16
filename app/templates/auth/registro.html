@@ -12,7 +12,7 @@
         <div class="card shadow">
             <div class="card-body p-4">
                 <h5 class="card-title mb-4">Registro</h5>
-                <form method="POST">
+                <form method="POST" autocomplete="off">
                     <div class="mb-3">
                         <label class="form-label">Nombre</label>
                         <input type="text" name="nombre" class="form-control" 
@@ -28,6 +28,13 @@
                         <input type="text" name="dni" class="form-control" 
                                placeholder="12345678" required maxlength="8">
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" name="email" class="form-control" 
+                            placeholder="ejemplo@gmail.com" required>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Cargo</label>
                         <select name="cargo_id" class="form-select" required>
@@ -63,5 +70,6 @@
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}

@@ -37,6 +37,7 @@ def registro():
         nombre = request.form.get('nombre')
         apellido = request.form.get('apellido')
         dni = request.form.get('dni')
+        email = request.form.get('email')
         cargo_id = request.form.get('cargo_id')
         obra_id = request.form.get('obra_id')
         password = request.form.get('password')
@@ -46,11 +47,16 @@ def registro():
         if Usuario.query.filter_by(dni=dni).first():
             flash('⚠ Este DNI ya está registrado. Inicia sesión.')
             return render_template('auth/registro.html', cargos=cargos, obras=obras)
+        if Usuario.query.filter_by(email=email).first():
+            flash('⚠ Este correo ya está registrado.')
+            return render_template('auth/registro.html', cargos=cargos, obras=obras)
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
         usuario = Usuario(
             nombre=nombre,
             apellido=apellido,
             dni=dni,
+            email=email,
             cargo_id=cargo_id,
             obra_id=obra_id,
             password_hash=password_hash,

@@ -1,9 +1,14 @@
 from flask import Flask, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager, current_user
+
 from config import Config
 from functools import wraps
+
+from flask_login import LoginManager, current_user
+from flask_mail import Mail
+
+mail = Mail()
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -31,6 +36,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    mail.init_app(app)
 
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint)
@@ -49,5 +55,17 @@ def create_app():
 
     from app.admin import admin as admin_blueprint
     app.register_blueprint(admin_blueprint)
+
+    @app.context_processor
+    def inject_pendientes():
+        from app.models import RegistroIPERC
+        try:
+            if current_user.is_authenticated and current_user.rol in ['supervisor', 'admin']:
+                count = RegistroIPERC.query.filter_by(estado='pendiente').count()
+            else:
+                count = 0
+        except:
+            count = 0
+        return dict(pendientes_count=count)
 
     return app
