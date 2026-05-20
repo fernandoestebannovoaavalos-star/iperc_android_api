@@ -16,6 +16,19 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Inicia sesión para continuar'
 
+
+def filtro_lima(dt, formato='%d/%m/%Y %H:%M'):
+    """
+    Filtro Jinja2 para fechas.
+    Tras la migración a TIMESTAMPTZ, psycopg2 ya devuelve
+    datetimes con tzinfo=UTC-05:00 (hora Lima).
+    Solo formateamos — sin conversión adicional.
+    """
+    if dt is None:
+        return ''
+    return dt.strftime(formato)
+
+
 def solo_rol(*roles):
     def decorador(f):
         @wraps(f)
@@ -28,6 +41,7 @@ def solo_rol(*roles):
             return f(*args, **kwargs)
         return decorated
     return decorador
+
 
 def create_app():
     app = Flask(__name__)
@@ -55,6 +69,9 @@ def create_app():
 
     from app.admin import admin as admin_blueprint
     app.register_blueprint(admin_blueprint)
+
+    # Filtro de fecha disponible en todos los templates
+    app.jinja_env.filters['lima'] = filtro_lima
 
     @app.context_processor
     def inject_pendientes():

@@ -40,7 +40,9 @@
                     <td><small class="font-monospace">{{ r.codigo }}</small></td>
                     <td><small>{{ r.area.nombre }}</small></td>
                     <td><small>{{ r.actividad.nombre }}</small></td>
-                    <td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                    <!-- DESPUÉS -->
+                    <!--<td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>-->
+                    <td><small>{{ r.fecha_registro | lima }}</small></td>
                     <td>
                         {% if r.geo_validado %}
                             <span class="badge bg-success">✓ GPS</span>
