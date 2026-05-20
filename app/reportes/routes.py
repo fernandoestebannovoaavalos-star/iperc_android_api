@@ -25,3 +25,4 @@ def generar_pdf(registro_id):
         as_attachment=True,
         download_name=f'{registro.codigo}.pdf'
     )
+

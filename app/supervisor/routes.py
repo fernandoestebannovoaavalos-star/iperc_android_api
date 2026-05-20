@@ -42,3 +42,19 @@ def observar(id):
     db.session.commit()
     flash(f'⚠ IPERC {registro.codigo} marcado como observado.')
     return redirect(url_for('supervisor.panel'))
+
+@supervisor.route('/supervisor/detalle/<int:id>')
+@login_required
+@solo_rol('supervisor', 'admin')
+def detalle(id):
+    from app.models import PeligroBase, FirmaDigital, PeligroAdicional
+    registro    = RegistroIPERC.query.get_or_404(id)
+    peligros    = PeligroBase.query.filter_by(actividad_id=registro.actividad_id).all()
+    adicionales = PeligroAdicional.query.filter_by(registro_id=id).all()
+    firma       = FirmaDigital.query.filter_by(registro_id=id).first()
+    return render_template('supervisor/detalle.html',
+        registro=registro,
+        peligros=peligros,
+        adicionales=adicionales,
+        firma=firma
+    )

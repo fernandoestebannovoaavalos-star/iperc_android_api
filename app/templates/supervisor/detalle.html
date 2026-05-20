@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% block title %}Detalle IPERC — {{ registro.codigo }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <h4 class="fw-bold">
+            <i class="bi bi-clipboard-check" style="color:#F97316;"></i>
+            Revisión de IPERC
+        </h4>
+        <p class="text-muted">Verifica el registro antes de aprobar u observar</p>
+    </div>
+    <div class="col-auto d-flex gap-2 align-items-center">
+        <a href="{{ url_for('supervisor.panel') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Volver al panel
+        </a>
+        <a href="{{ url_for('reportes.generar_pdf', registro_id=registro.id) }}"
+           class="btn btn-outline-danger btn-sm" target="_blank">
+            <i class="bi bi-file-pdf"></i> Ver PDF
+        </a>
+    </div>
+</div>
+
+<!-- DATOS GENERALES -->
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-dark text-white">
+        <strong>Datos del registro</strong>
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-3"><small class="text-muted">Código</small>
+                <p class="fw-bold font-monospace mb-0">{{ registro.codigo }}</p></div>
+            <div class="col-md-3"><small class="text-muted">Fecha</small>
+                <p class="fw-bold mb-0">{{ registro.fecha_registro | lima }}</p></div>
+            <div class="col-md-3"><small class="text-muted">Estado</small>
+                <p class="mb-0">
+                    {% if registro.estado == 'aprobado' %}
+                        <span class="badge bg-success">Aprobado</span>
+                    {% elif registro.estado == 'pendiente' %}
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                    {% else %}
+                        <span class="badge bg-danger">Observado</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-3"><small class="text-muted">Geo-validado</small>
+                <p class="mb-0">
+                    {% if registro.geo_validado %}
+                        <span class="badge bg-success">✓ GPS validado</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Sin GPS</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-3"><small class="text-muted">Trabajador</small>
+                <p class="fw-bold mb-0">{{ registro.registrado_por.nombre }} {{ registro.registrado_por.apellido }}</p></div>
+            <div class="col-md-3"><small class="text-muted">DNI</small>
+                <p class="mb-0">{{ registro.registrado_por.dni }}</p></div>
+            <div class="col-md-3"><small class="text-muted">Área</small>
+                <p class="mb-0">{{ registro.area.nombre }}</p></div>
+            <div class="col-md-3"><small class="text-muted">Actividad</small>
+                <p class="mb-0">{{ registro.actividad.nombre }}</p></div>
+            {% if registro.lat %}
+            <div class="col-md-6"><small class="text-muted">Coordenadas</small>
+                <p class="mb-0 font-monospace" style="font-size:13px;">
+                    {{ registro.lat | round(6) }}, {{ registro.lon | round(6) }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- PELIGROS BASE -->
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-dark text-white">
+        <strong>Peligros identificados</strong>
+        <span class="badge bg-secondary ms-2">{{ peligros|length }}</span>
+    </div>
+    <div class="card-body p-0" style="overflow-x:auto;">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>N°</th>
+                    <th>Peligro</th>
+                    <th>Riesgo</th>
+                    <th class="text-center">P</th>
+                    <th class="text-center">S</th>
+                    <th class="text-center">Nivel</th>
+                    <th>Medidas de Control</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in peligros %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td style="font-size:13px;">{{ p.descripcion }}</td>
+                    <td style="font-size:12px;color:#666;">{{ p.riesgo_consecuencia }}</td>
+                    <td class="text-center">{{ p.p_sin }}</td>
+                    <td class="text-center">{{ p.s_sin }}</td>
+                    <td class="text-center">
+                        {% set nivel = p.nivel_sin | upper %}
+                        {% if nivel == 'TRIVIAL' %}
+                            <span class="badge bg-success">{{ p.nivel_sin }}</span>
+                        {% elif nivel == 'TOLERABLE' %}
+                            <span class="badge bg-info">{{ p.nivel_sin }}</span>
+                        {% elif nivel == 'MODERADO' %}
+                            <span class="badge bg-warning text-dark">{{ p.nivel_sin }}</span>
+                        {% elif nivel == 'IMPORTANTE' %}
+                            <span class="badge bg-danger">{{ p.nivel_sin }}</span>
+                        {% else %}
+                            <span class="badge bg-dark">{{ p.nivel_sin }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;">{{ p.medidas_control }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- PELIGROS ADICIONALES -->
+{% if adicionales %}
+<div class="card shadow-sm mb-3 border-warning">
+    <div class="card-header text-dark" style="background:#fff3cd;">
+        <strong><i class="bi bi-exclamation-triangle text-warning"></i>
+        Peligros adicionales identificados en campo</strong>
+        <span class="badge bg-warning text-dark ms-2">{{ adicionales|length }}</span>
+    </div>
+    <div class="card-body p-0" style="overflow-x:auto;">
+        <table class="table table-sm mb-0">
+            <thead style="background:#fff3cd;">
+                <tr>
+                    <th>N°</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Riesgo</th>
+                    <th class="text-center">P</th>
+                    <th class="text-center">S</th>
+                    <th class="text-center">Nivel</th>
+                    <th>Medidas de Control</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for pa in adicionales %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><span class="badge bg-secondary">{{ pa.tipo }}</span></td>
+                    <td style="font-size:13px;">{{ pa.descripcion }}</td>
+                    <td style="font-size:12px;color:#666;">{{ pa.riesgo_consecuencia }}</td>
+                    <td class="text-center">{{ pa.p_sin }}</td>
+                    <td class="text-center">{{ pa.s_sin }}</td>
+                    <td class="text-center">
+                        {% set nivel = pa.nivel_sin | upper %}
+                        {% if nivel == 'TRIVIAL' %}
+                            <span class="badge bg-success">{{ pa.nivel_sin }}</span>
+                        {% elif nivel == 'TOLERABLE' %}
+                            <span class="badge bg-info">{{ pa.nivel_sin }}</span>
+                        {% elif nivel == 'MODERADO' %}
+                            <span class="badge bg-warning text-dark">{{ pa.nivel_sin }}</span>
+                        {% elif nivel == 'IMPORTANTE' %}
+                            <span class="badge bg-danger">{{ pa.nivel_sin }}</span>
+                        {% else %}
+                            <span class="badge bg-dark">{{ pa.nivel_sin }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;">{{ pa.medidas_control }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- FIRMA DIGITAL -->
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-dark text-white">
+        <strong>Firma digital del trabajador</strong>
+    </div>
+    <div class="card-body">
+        {% if firma %}
+        <div class="row align-items-center">
+            <div class="col-md-4 text-center">
+                <img src="{{ firma.firma_imagen }}" alt="Firma"
+                     style="max-height:120px;border:1px solid #ddd;border-radius:8px;padding:8px;background:#fff;">
+            </div>
+            <div class="col-md-8">
+                <table class="table table-sm mb-0">
+                    <tr><td class="text-muted">Trabajador</td>
+                        <td><strong>{{ registro.registrado_por.nombre }} {{ registro.registrado_por.apellido }}</strong></td></tr>
+                    <tr><td class="text-muted">DNI</td>
+                        <td>{{ registro.registrado_por.dni }}</td></tr>
+                    <tr><td class="text-muted">Fecha y hora</td>
+                        <td>{{ firma.timestamp | lima }}</td></tr>
+                    <tr><td class="text-muted">GPS firma</td>
+                        <td>
+                            {% if firma.lat %}
+                                {{ firma.lat | round(6) }}, {{ firma.lon | round(6) }}
+                            {% else %}
+                                No registrado
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-muted p-3">
+            <i class="bi bi-pen" style="font-size:2rem;"></i>
+            <p class="mt-2 mb-0">Sin firma registrada aún</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ACCIONES — solo si está pendiente -->
+{% if registro.estado == 'pendiente' %}
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Decisión del supervisor</h6>
+        <div class="d-flex gap-3">
+            <form method="POST" action="/supervisor/aprobar/{{ registro.id }}">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle"></i> Aprobar IPERC
+                </button>
+            </form>
+            <form method="POST" action="/supervisor/observar/{{ registro.id }}">
+                <div class="input-group">
+                    <button type="submit" class="btn btn-danger btn-lg">
+                        <i class="bi bi-x-circle"></i> Observar IPERC
+                    </button>
+                </div>
+            </form>
+        </div>
+        <small class="text-muted mt-2 d-block">
+            Al aprobar, el trabajador podrá iniciar la actividad.
+            Al observar, el registro quedará marcado para corrección.
+        </small>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    Este IPERC ya fue procesado — estado actual:
+    <strong>{{ registro.estado | upper }}</strong>
+</div>
+{% endif %}
+
+{% endblock %}

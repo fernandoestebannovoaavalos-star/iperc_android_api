@@ -53,8 +53,13 @@
                             <span class="badge bg-secondary">Sin GPS</span>
                         {% endif %}
                     </td>
-                    <td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                    <td><small>{{ r.fecha_registro | lima }}</small></td>
                     <td>
+                        <!-- NUEVO: botón Ver detalle antes de aprobar -->
+                        <a href="{{ url_for('supervisor.detalle', id=r.id) }}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-eye"></i> Revisar
+                        </a>
                         <form method="POST" action="/supervisor/aprobar/{{ r.id }}" style="display:inline;">
                             <button type="submit" class="btn btn-success btn-sm">
                                 <i class="bi bi-check"></i> Aprobar
@@ -93,6 +98,7 @@
                     <th>Trabajador</th>
                     <th>Área</th>
                     <th>Fecha</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -101,11 +107,15 @@
                     <td><small class="font-monospace">{{ r.codigo }}</small></td>
                     <td>{{ r.registrado_por.nombre }} {{ r.registrado_por.apellido }}</td>
                     <td>{{ r.area.nombre }}</td>
-                    <td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                    <td><small>{{ r.fecha_registro | lima }}</small></td>
                     <td>
-                        <a href="{{ url_for('reportes.generar_pdf', registro_id=r.id) }}" 
-                        class="btn btn-outline-danger btn-sm" target="_blank">
-                            <i class="bi bi-file-pdf"></i> PDF
+                        <a href="{{ url_for('supervisor.detalle', id=r.id) }}"
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('reportes.generar_pdf', registro_id=r.id) }}"
+                           class="btn btn-outline-danger btn-sm" target="_blank">
+                            <i class="bi bi-file-pdf"></i>
                         </a>
                     </td>
                 </tr>
