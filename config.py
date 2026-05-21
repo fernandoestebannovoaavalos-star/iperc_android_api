@@ -16,3 +16,4 @@ class Config:
     MAIL_USERNAME = 'fernandoestebannovoaavalos@gmail.com'
     MAIL_PASSWORD = 'titdyaoqncicaxwi'
     MAIL_DEFAULT_SENDER = 'fernandoestebannovoaavalos@gmail.com'
+    SERVER_NAME = None

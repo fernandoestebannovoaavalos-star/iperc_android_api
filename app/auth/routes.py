@@ -2,54 +2,87 @@ from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import auth
 from app.models import Usuario, Cargo, Obra
-from app import db
+from app import db, registrar_intento, ip_bloqueada
 import bcrypt
+
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
+
     if request.method == 'POST':
-        dni = request.form.get('dni')
-        password = request.form.get('password')
-        usuario = Usuario.query.filter_by(dni=dni).first()
+        ip = request.remote_addr
+
+        # FIX 7: Rate limiting — bloquear IP con demasiados intentos
+        if ip_bloqueada(ip):
+            flash('⚠ Demasiados intentos fallidos. Espera 5 minutos.')
+            return render_template('auth/login.html'), 429
+
+        dni      = request.form.get('dni', '').strip()
+        password = request.form.get('password', '')
+
+        usuario = Usuario.query.filter_by(dni=dni, activo=True).first()
+
         if usuario and bcrypt.checkpw(password.encode('utf-8'), usuario.password_hash):
             login_user(usuario)
+            # Login exitoso — limpiar intentos de esta IP
+            from app import _intentos, _lock
+            with _lock:
+                _intentos[ip] = []
             return redirect(url_for('main.dashboard'))
+
+        # Login fallido — registrar intento
+        registrar_intento(ip)
         flash('⚠ DNI o contraseña incorrectos.')
+
     return render_template('auth/login.html')
+
 
 @auth.route('/ir-a-registro')
 def ir_a_registro():
     session['puede_registrarse'] = True
     return redirect(url_for('auth.registro'))
 
+
 @auth.route('/registro', methods=['GET', 'POST'])
 def registro():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
+
     if not session.get('puede_registrarse'):
         flash('⚠ Accede al registro desde el enlace de la página de inicio de sesión.')
         return redirect(url_for('auth.login'))
+
     cargos = Cargo.query.all()
-    obras = Obra.query.filter_by(activo=True).all()
+    obras  = Obra.query.filter_by(activo=True).all()
+
     if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        apellido = request.form.get('apellido')
-        dni = request.form.get('dni')
-        email = request.form.get('email')
+        nombre   = request.form.get('nombre', '').strip()
+        apellido = request.form.get('apellido', '').strip()
+        dni      = request.form.get('dni', '').strip()
+        email    = request.form.get('email', '').strip() or None
         cargo_id = request.form.get('cargo_id')
-        obra_id = request.form.get('obra_id')
-        password = request.form.get('password')
+        obra_id  = request.form.get('obra_id')
+        password = request.form.get('password', '')
+
         if not nombre or not apellido or not dni or not cargo_id or not obra_id or not password:
             flash('⚠ Todos los campos son obligatorios.')
             return render_template('auth/registro.html', cargos=cargos, obras=obras)
+
+        # FIX: validar longitud mínima de contraseña
+        if len(password) < 8:
+            flash('⚠ La contraseña debe tener al menos 8 caracteres.')
+            return render_template('auth/registro.html', cargos=cargos, obras=obras)
+
         if Usuario.query.filter_by(dni=dni).first():
             flash('⚠ Este DNI ya está registrado. Inicia sesión.')
             return render_template('auth/registro.html', cargos=cargos, obras=obras)
-        if Usuario.query.filter_by(email=email).first():
+
+        if email and Usuario.query.filter_by(email=email).first():
             flash('⚠ Este correo ya está registrado.')
             return render_template('auth/registro.html', cargos=cargos, obras=obras)
+
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
         usuario = Usuario(
@@ -67,7 +100,9 @@ def registro():
         session.pop('puede_registrarse', None)
         flash('✓ Registro exitoso. Inicia sesión.')
         return redirect(url_for('auth.login'))
+
     return render_template('auth/registro.html', cargos=cargos, obras=obras)
+
 
 @auth.route('/logout')
 @login_required
