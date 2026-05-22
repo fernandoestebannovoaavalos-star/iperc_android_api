@@ -26,7 +26,7 @@ login_manager.login_message = 'Inicia sesión para continuar'
 _intentos = defaultdict(list)
 _lock = threading.Lock()
 
-MAX_INTENTOS = 10
+MAX_INTENTOS = 3
 VENTANA_SEG  = 300  # 5 minutos
 
 def registrar_intento(ip):
