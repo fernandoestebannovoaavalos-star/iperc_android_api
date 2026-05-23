@@ -21,7 +21,7 @@ login_manager.login_message = 'Inicia sesión para continuar'
 
 
 # ─────────────────────────────────────────────
-# FIX 7: Rate limiting — máx 10 intentos / 5 min por IP
+# FIX 7: Rate limiting — máx 3 intentos / 5 min por IP
 # ─────────────────────────────────────────────
 _intentos = defaultdict(list)
 _lock = threading.Lock()
