@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Cambiar Contraseña{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark">
+                <strong><i class="bi bi-key"></i> Cambiar contraseña</strong>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Por seguridad debes establecer tu propia contraseña antes de continuar.
+                </p>
+
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-warning">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="/auth/cambiar-clave">
+                    <div class="mb-3">
+                        <label class="form-label">Nueva contraseña</label>
+                        <input type="password" name="nueva_clave" class="form-control"
+                               placeholder="Mínimo 8 caracteres" required minlength="8">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar contraseña</label>
+                        <input type="password" name="confirmar_clave" class="form-control"
+                               placeholder="Repite la contraseña" required minlength="8">
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">
+                        <i class="bi bi-check-circle"></i> Guardar mi contraseña
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

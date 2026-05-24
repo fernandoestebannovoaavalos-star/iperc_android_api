@@ -12,10 +12,19 @@
         <div class="card shadow">
             <div class="card-body p-4">
                 <h5 class="card-title mb-4">Iniciar Sesión</h5>
+
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-warning">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
                 <form method="POST">
                     <div class="mb-3">
                         <label class="form-label">DNI</label>
-                        <input type="text" name="dni" class="form-control" 
+                        <input type="text" name="dni" class="form-control"
                                placeholder="12345678" required maxlength="8">
                     </div>
                     <div class="mb-3">
@@ -28,8 +37,9 @@
                 </form>
                 <hr>
                 <div class="text-center">
-                    <small>¿No tienes cuenta? 
-                        <a href="{{ url_for('auth.ir_a_registro') }}">Regístrate aquí</a>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Para obtener acceso contacta al administrador del sistema.
                     </small>
                 </div>
             </div>

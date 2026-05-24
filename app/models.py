@@ -44,6 +44,7 @@ class Usuario(UserMixin, db.Model):
     cargo_id      = db.Column(db.Integer,      db.ForeignKey('cargos.id'), nullable=True)
     obra_id       = db.Column(db.Integer,      db.ForeignKey('obras.id'),  nullable=True)
     activo        = db.Column(db.Boolean,      default=True)
+    debe_cambiar_clave = db.Column(db.Boolean, default=False)
     # FIX 1: utcnow deprecado → _ahora_utc
     created_at    = db.Column(db.DateTime(timezone=True), default=_ahora_lima)
 

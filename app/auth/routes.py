@@ -14,7 +14,7 @@ def login():
     if request.method == 'POST':
         ip = request.remote_addr
 
-        # FIX 7: Rate limiting — bloquear IP con demasiados intentos
+        # Rate limiting
         if ip_bloqueada(ip):
             flash('⚠ Demasiados intentos fallidos. Espera 5 minutos.')
             return render_template('auth/login.html'), 429
@@ -26,82 +26,50 @@ def login():
 
         if usuario and bcrypt.checkpw(password.encode('utf-8'), usuario.password_hash):
             login_user(usuario)
-            # Login exitoso — limpiar intentos de esta IP
+            # Limpiar intentos de esta IP
             from app import _intentos, _lock
             with _lock:
                 _intentos[ip] = []
+
+            # Verificar si debe cambiar clave
+            if usuario.debe_cambiar_clave:
+                return redirect(url_for('auth.cambiar_clave'))
+
             return redirect(url_for('main.dashboard'))
 
-        # Login fallido — registrar intento
+        # Login fallido
         registrar_intento(ip)
         flash('⚠ DNI o contraseña incorrectos.')
 
     return render_template('auth/login.html')
 
 
-@auth.route('/ir-a-registro')
-def ir_a_registro():
-    session['puede_registrarse'] = True
-    return redirect(url_for('auth.registro'))
-
-
-@auth.route('/registro', methods=['GET', 'POST'])
-def registro():
-    if current_user.is_authenticated:
+@auth.route('/auth/cambiar-clave', methods=['GET', 'POST'])
+@login_required
+def cambiar_clave():
+    # Si no necesita cambiar clave, redirigir al dashboard
+    if not current_user.debe_cambiar_clave:
         return redirect(url_for('main.dashboard'))
 
-    if not session.get('puede_registrarse'):
-        flash('⚠ Accede al registro desde el enlace de la página de inicio de sesión.')
-        return redirect(url_for('auth.login'))
-
-    cargos = Cargo.query.all()
-    obras  = Obra.query.filter_by(activo=True).all()
-
     if request.method == 'POST':
-        nombre   = request.form.get('nombre', '').strip()
-        apellido = request.form.get('apellido', '').strip()
-        dni      = request.form.get('dni', '').strip()
-        email    = request.form.get('email', '').strip() or None
-        cargo_id = request.form.get('cargo_id')
-        obra_id  = request.form.get('obra_id')
-        password = request.form.get('password', '')
+        nueva    = request.form.get('nueva_clave', '').strip()
+        confirma = request.form.get('confirmar_clave', '').strip()
 
-        if not nombre or not apellido or not dni or not cargo_id or not obra_id or not password:
-            flash('⚠ Todos los campos son obligatorios.')
-            return render_template('auth/registro.html', cargos=cargos, obras=obras)
-
-        # FIX: validar longitud mínima de contraseña
-        if len(password) < 8:
+        if len(nueva) < 8:
             flash('⚠ La contraseña debe tener al menos 8 caracteres.')
-            return render_template('auth/registro.html', cargos=cargos, obras=obras)
+            return render_template('auth/cambiar_clave.html')
 
-        if Usuario.query.filter_by(dni=dni).first():
-            flash('⚠ Este DNI ya está registrado. Inicia sesión.')
-            return render_template('auth/registro.html', cargos=cargos, obras=obras)
+        if nueva != confirma:
+            flash('⚠ Las contraseñas no coinciden.')
+            return render_template('auth/cambiar_clave.html')
 
-        if email and Usuario.query.filter_by(email=email).first():
-            flash('⚠ Este correo ya está registrado.')
-            return render_template('auth/registro.html', cargos=cargos, obras=obras)
-
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-
-        usuario = Usuario(
-            nombre=nombre,
-            apellido=apellido,
-            dni=dni,
-            email=email,
-            cargo_id=cargo_id,
-            obra_id=obra_id,
-            password_hash=password_hash,
-            rol='trabajador'
-        )
-        db.session.add(usuario)
+        current_user.password_hash      = bcrypt.hashpw(nueva.encode('utf-8'), bcrypt.gensalt())
+        current_user.debe_cambiar_clave = False
         db.session.commit()
-        session.pop('puede_registrarse', None)
-        flash('✓ Registro exitoso. Inicia sesión.')
-        return redirect(url_for('auth.login'))
+        flash('✓ Contraseña actualizada correctamente. Bienvenido al sistema.')
+        return redirect(url_for('main.dashboard'))
 
-    return render_template('auth/registro.html', cargos=cargos, obras=obras)
+    return render_template('auth/cambiar_clave.html')
 
 
 @auth.route('/logout')

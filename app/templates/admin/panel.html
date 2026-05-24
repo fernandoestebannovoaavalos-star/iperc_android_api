@@ -14,14 +14,10 @@
         <a href="/admin/reportes" class="btn btn-primary">
             <i class="bi bi-bar-chart"></i> Ver Reportes
         </a>
-
         <a href="/admin/estadisticas" class="btn btn-success">
             <i class="bi bi-graph-up"></i> Estadísticas
         </a>
-
     </div>
-
-
 </div>
 
 {% with messages = get_flashed_messages() %}
@@ -73,12 +69,87 @@
 </div>
 
 <div class="row g-3">
-    <!-- USUARIOS -->
+
+    <!-- GESTIÓN DE USUARIOS -->
     <div class="col-12">
         <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <strong><i class="bi bi-people"></i> Gestión de Usuarios</strong>
+                <button class="btn btn-warning btn-sm" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#form-crear-usuario">
+                    <i class="bi bi-person-plus"></i> + Nuevo Usuario
+                </button>
             </div>
+
+            <!-- FORMULARIO CREAR USUARIO (colapsable) -->
+            <div class="collapse" id="form-crear-usuario">
+                <div class="card-body border-bottom bg-light">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-person-plus text-warning"></i>
+                        Crear nuevo usuario
+                    </h6>
+                    <form method="POST" action="/admin/usuario/crear">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" name="nombre" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Apellido</label>
+                                <input type="text" name="apellido" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">DNI</label>
+                                <input type="text" name="dni" class="form-control form-control-sm"
+                                       maxlength="8" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Correo (opcional)</label>
+                                <input type="email" name="email" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Rol</label>
+                                <select name="rol" class="form-select form-select-sm">
+                                    <option value="trabajador">Trabajador</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cargo</label>
+                                <select name="cargo_id" class="form-select form-select-sm">
+                                    <option value="">-- Sin cargo --</option>
+                                    {% for c in cargos %}
+                                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Obra</label>
+                                <select name="obra_id" class="form-select form-select-sm">
+                                    <option value="">-- Sin obra --</option>
+                                    {% for o in obras %}
+                                    <option value="{{ o.id }}">{{ o.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Contraseña temporal</label>
+                                <input type="text" name="password" class="form-control form-control-sm"
+                                       placeholder="Mínimo 8 caracteres" required minlength="8">
+                                <small class="text-muted">El usuario deberá cambiarla al iniciar sesión.</small>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-person-check"></i> Crear Usuario
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TABLA USUARIOS -->
             <div class="card-body p-0">
                 <div style="overflow-x:auto;">
                 <table class="table table-hover mb-0">
@@ -89,6 +160,7 @@
                             <th>Rol</th>
                             <th>Cargo</th>
                             <th>Estado</th>
+                            <th>Clave</th>
                             <th>Cambiar Rol</th>
                             <th>Acción</th>
                         </tr>
@@ -96,7 +168,14 @@
                     <tbody>
                     {% for u in usuarios %}
                         <tr>
-                            <td>{{ u.nombre }} {{ u.apellido }}</td>
+                            <td>
+                                {{ u.nombre }} {{ u.apellido }}
+                                {% if u.debe_cambiar_clave %}
+                                    <span class="badge bg-warning text-dark ms-1" title="Debe cambiar contraseña">
+                                        <i class="bi bi-key"></i>
+                                    </span>
+                                {% endif %}
+                            </td>
                             <td><small class="font-monospace">{{ u.dni }}</small></td>
                             <td>
                                 {% if u.rol == 'admin' %}
@@ -107,7 +186,7 @@
                                     <span class="badge bg-primary">Trabajador</span>
                                 {% endif %}
                             </td>
-                            <td><small>{{ u.cargo_id or '-' }}</small></td>
+                            <td><small>{{ u.cargo.nombre if u.cargo else '-' }}</small></td>
                             <td>
                                 {% if u.activo %}
                                     <span class="badge bg-success">Activo</span>
@@ -116,11 +195,31 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <form method="POST" action="/admin/usuario/rol/{{ u.id }}" style="display:flex;gap:4px;">
+                                <!-- Resetear contraseña -->
+                                <button class="btn btn-outline-secondary btn-sm"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#reset-{{ u.id }}">
+                                    <i class="bi bi-key"></i>
+                                </button>
+                                <div class="collapse mt-1" id="reset-{{ u.id }}">
+                                    <form method="POST" action="/admin/usuario/resetear/{{ u.id }}"
+                                          style="display:flex;gap:4px;">
+                                        <input type="text" name="nueva_clave"
+                                               class="form-control form-control-sm"
+                                               placeholder="Nueva clave" minlength="8"
+                                               style="width:130px;" required>
+                                        <button type="submit" class="btn btn-sm btn-warning">✓</button>
+                                    </form>
+                                </div>
+                            </td>
+                            <td>
+                                <form method="POST" action="/admin/usuario/rol/{{ u.id }}"
+                                      style="display:flex;gap:4px;">
                                     <select name="rol" class="form-select form-select-sm" style="width:130px;">
                                         <option value="trabajador" {% if u.rol=='trabajador' %}selected{% endif %}>Trabajador</option>
                                         <option value="supervisor" {% if u.rol=='supervisor' %}selected{% endif %}>Supervisor</option>
-                                        <option value="admin" {% if u.rol=='admin' %}selected{% endif %}>Admin</option>
+                                        <option value="admin"      {% if u.rol=='admin'      %}selected{% endif %}>Admin</option>
                                     </select>
                                     <button type="submit" class="btn btn-sm btn-outline-primary">✓</button>
                                 </form>
@@ -128,7 +227,8 @@
                             <td>
                                 {% if u.id != current_user.id %}
                                 <form method="POST" action="/admin/usuario/toggle/{{ u.id }}">
-                                    <button type="submit" class="btn btn-sm {% if u.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                                    <button type="submit"
+                                            class="btn btn-sm {% if u.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
                                         {% if u.activo %}Desactivar{% else %}Activar{% endif %}
                                     </button>
                                 </form>
@@ -169,7 +269,8 @@
                             </td>
                             <td>
                                 <form method="POST" action="/admin/obra/toggle/{{ o.id }}">
-                                    <button type="submit" class="btn btn-sm {% if o.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                                    <button type="submit"
+                                            class="btn btn-sm {% if o.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
                                         {% if o.activo %}Desactivar{% else %}Activar{% endif %}
                                     </button>
                                 </form>
@@ -205,11 +306,13 @@
                     <div class="row g-2 mb-2">
                         <div class="col">
                             <label class="form-label">Latitud</label>
-                            <input type="number" step="any" name="lat" class="form-control form-control-sm" placeholder="-7.1638">
+                            <input type="number" step="any" name="lat"
+                                   class="form-control form-control-sm" placeholder="-7.1638">
                         </div>
                         <div class="col">
                             <label class="form-label">Longitud</label>
-                            <input type="number" step="any" name="lon" class="form-control form-control-sm" placeholder="-78.5040">
+                            <input type="number" step="any" name="lon"
+                                   class="form-control form-control-sm" placeholder="-78.5040">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -223,5 +326,6 @@
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}
