@@ -12,6 +12,32 @@
     </div>
 </div>
 
+<!-- ── BANNERS ESTADO CONEXIÓN ─────────────────────────────── -->
+<div id="banner-offline" style="display:none;"
+     class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-wifi-off fs-5"></i>
+    <div>
+        <strong>Sin conexión</strong> — Tu IPERC se guardará en este dispositivo
+        y se enviará automáticamente cuando recuperes la red WiFi de la obra.
+    </div>
+</div>
+
+<div id="banner-sync" style="display:none;"
+     class="alert alert-success d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-check-circle fs-5"></i>
+    <div>
+        <strong>✓ IPERC enviado</strong> — El registro pendiente fue sincronizado
+        correctamente con el servidor.
+    </div>
+</div>
+
+<div id="banner-pendientes" style="display:none;"
+     class="alert alert-info d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-clock-history fs-5"></i>
+    <div id="texto-pendientes">Tienes registros pendientes de sincronizar.</div>
+</div>
+<!-- ─────────────────────────────────────────────────────────── -->
+
 <form method="POST" action="/iperc/guardar" id="form-iperc" onsubmit="prepararEnvio()">
 <input type="hidden" name="total_adicionales" id="total_adicionales" value="0">
 <div class="row g-3">
@@ -63,7 +89,6 @@
         </div>
         <div class="card-body p-0">
 
-            <!-- Peligros base -->
             <div id="sin-peligros" class="text-center p-4 text-muted">
                 <i class="bi bi-arrow-up-circle" style="font-size:2rem;"></i>
                 <p class="mt-2">Selecciona un área y actividad para cargar los peligros</p>
@@ -84,7 +109,6 @@
                 </table>
             </div>
 
-            <!-- Formulario ingreso peligro adicional (oculto por defecto) -->
             <div id="form-adicional" style="display:none;">
                 <div class="p-3 bg-warning bg-opacity-10 border-top border-warning">
                     <small class="text-warning fw-bold">
@@ -145,7 +169,6 @@
                 </div>
             </div>
 
-            <!-- Lista de peligros adicionales agregados -->
             <div id="lista-adicionales" style="display:none;">
                 <div class="px-3 pt-2 pb-1 bg-warning bg-opacity-10 border-top border-warning">
                     <small class="text-warning fw-bold">
@@ -158,15 +181,8 @@
                 <table class="table table-sm mb-0">
                     <thead style="background:#fff3cd;">
                         <tr>
-                            <th>#</th>
-                            <th>Tipo</th>
-                            <th>Descripción</th>
-                            <th>Riesgo</th>
-                            <th>P</th>
-                            <th>S</th>
-                            <th>Nivel</th>
-                            <th>Medidas</th>
-                            <th></th>
+                            <th>#</th><th>Tipo</th><th>Descripción</th><th>Riesgo</th>
+                            <th>P</th><th>S</th><th>Nivel</th><th>Medidas</th><th></th>
                         </tr>
                     </thead>
                     <tbody id="cuerpo-adicionales"></tbody>
@@ -221,7 +237,7 @@
 </form>
 
 <script>
-// ── Fecha y hora automática ───────────────────────
+// ── Fecha y hora ──────────────────────────────────
 function actualizarHora() {
     document.getElementById('fecha_hora').value = new Date().toLocaleString('es-PE');
 }
@@ -337,11 +353,9 @@ function obtenerGPS() {
 }
 
 // ── Peligros adicionales ──────────────────────────
-// Array en memoria — cada item: {tipo, descripcion, riesgo, p, s, nivel, medidas}
 let adicionales = [];
 
 function mostrarFormAdicional() {
-    // Limpiar campos del formulario de entrada
     ['new_tipo','new_descripcion','new_riesgo','new_medidas'].forEach(id => {
         document.getElementById(id).value = '';
     });
@@ -379,12 +393,10 @@ function agregarALista() {
     const p           = parseInt(document.getElementById('new_p').value);
     const s           = parseInt(document.getElementById('new_s').value);
     const medidas     = document.getElementById('new_medidas').value.trim();
-
     if (!tipo || !descripcion || !riesgo || !medidas) {
         alert('Completa todos los campos del peligro adicional antes de agregar.');
         return;
     }
-
     const { nivel } = calcularNivelNew();
     adicionales.push({ tipo, descripcion, riesgo, p, s, nivel, medidas });
     renderizarLista();
@@ -400,22 +412,15 @@ function renderizarLista() {
     const tbody = document.getElementById('cuerpo-adicionales');
     const lista = document.getElementById('lista-adicionales');
     const count = document.getElementById('count-adicionales');
-
     tbody.innerHTML = '';
-
-    if (adicionales.length === 0) {
-        lista.style.display = 'none';
-        return;
-    }
-
+    if (adicionales.length === 0) { lista.style.display = 'none'; return; }
     lista.style.display = 'block';
     count.textContent = adicionales.length;
-
     adicionales.forEach((a, i) => {
         const pxs = a.p * a.s;
         tbody.innerHTML += `
         <tr>
-            <td><small>${i + 1}</small></td>
+            <td><small>${i+1}</small></td>
             <td><span class="badge bg-secondary">${a.tipo}</span></td>
             <td style="font-size:12px;">${a.descripcion}</td>
             <td style="font-size:12px;color:#666;">${a.riesgo}</td>
@@ -425,7 +430,7 @@ function renderizarLista() {
             <td style="font-size:12px;">${a.medidas}</td>
             <td>
                 <button type="button" class="btn btn-outline-danger btn-sm"
-                        onclick="eliminarAdicional(${i})" title="Eliminar">
+                        onclick="eliminarAdicional(${i})">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -433,11 +438,9 @@ function renderizarLista() {
     });
 }
 
-// ── Preparar envío: inyectar adicionales como campos ocultos ──
+// ── Preparar envío ────────────────────────────────
 function prepararEnvio() {
-    // Eliminar campos ocultos previos de adicionales
     document.querySelectorAll('.hidden-adic').forEach(el => el.remove());
-
     const form = document.getElementById('form-iperc');
     adicionales.forEach((a, i) => {
         const n = i + 1;
@@ -458,9 +461,62 @@ function prepararEnvio() {
             form.appendChild(input);
         });
     });
-
     document.getElementById('total_adicionales').value = adicionales.length;
     return true;
 }
+
+// ── OFFLINE: detectar conexión ────────────────────
+function actualizarEstadoConexion() {
+    const banner = document.getElementById('banner-offline');
+    banner.style.display = navigator.onLine ? 'none' : 'flex';
+}
+window.addEventListener('online',  actualizarEstadoConexion);
+window.addEventListener('offline', actualizarEstadoConexion);
+actualizarEstadoConexion();
+
+// ── OFFLINE: escuchar mensajes del Service Worker ─
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data.tipo === 'sync-exitoso') {
+            const b = document.getElementById('banner-sync');
+            b.style.display = 'flex';
+            setTimeout(() => b.style.display = 'none', 5000);
+        }
+        if (event.data.tipo === 'pendientes-count' && event.data.cantidad > 0) {
+            const b = document.getElementById('banner-pendientes');
+            document.getElementById('texto-pendientes').textContent =
+                `Tienes ${event.data.cantidad} IPERC pendiente(s) de sincronizar. Se enviarán automáticamente cuando recuperes conexión.`;
+            b.style.display = 'flex';
+        }
+    });
+    navigator.serviceWorker.ready.then(sw => {
+        sw.active?.postMessage('verificar-pendientes');
+    });
+}
+
+// ── OFFLINE: interceptar submit sin conexión ──────
+document.getElementById('form-iperc').addEventListener('submit', async function(e) {
+    if (!navigator.onLine) {
+        e.preventDefault();
+        prepararEnvio();
+        const formData = new FormData(this);
+        try {
+            const resp = await fetch('/iperc/guardar', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (data.status === 'offline') {
+                const b = document.getElementById('banner-offline');
+                b.innerHTML = `
+                    <i class="bi bi-check-circle fs-5"></i>
+                    <div><strong>IPERC guardado en tu celular</strong> —
+                    Se enviará automáticamente cuando recuperes la red de la obra.</div>`;
+                b.className = 'alert alert-success d-flex align-items-center gap-2 mb-3';
+                b.style.display = 'flex';
+                window.scrollTo(0, 0);
+            }
+        } catch(err) {
+            console.log('Error offline:', err);
+        }
+    }
+});
 </script>
 {% endblock %}
