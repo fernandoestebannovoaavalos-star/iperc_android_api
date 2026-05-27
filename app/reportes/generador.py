@@ -37,6 +37,175 @@ def _fmt_fecha(valor, incluir_hora=True):
     return valor.strftime(fmt)
 
 
+def _tabla_matriz_riesgo():
+    """Matriz de riesgo P×S al pie de cada IPERC generado."""
+    RED    = colors.HexColor('#E53935')
+    YELLOW = colors.HexColor('#FDD835')
+    GREEN  = colors.HexColor('#43A047')
+    NAVY   = colors.HexColor('#1F3864')
+    PURPLE = colors.HexColor('#4A148C')
+    AMBER  = colors.HexColor('#F57F17')
+
+    RED_VALS    = {1,2,3,4,5,6,7,8,9,10}
+    YELLOW_VALS = {11,12,13,14,15,18}
+
+    def cell_bg(val):
+        if val in RED_VALS:    return RED
+        if val in YELLOW_VALS: return YELLOW
+        return GREEN
+    def cell_tc(val):
+        if val in YELLOW_VALS: return colors.HexColor('#212121')
+        return colors.white
+
+    MATRIX = [
+        [1, 2, 4, 7, 11],
+        [3, 5, 8, 12, 16],
+        [6, 9, 13, 17, 20],
+        [10, 14, 18, 21, 23],
+        [15, 19, 22, 24, 25],
+    ]
+    SEV_LABELS = ['Catastrófico', 'Mortalidad', 'Permanente', 'Temporal', 'Menor']
+    SEV_NUMS   = ['1', '2', '3', '4', '5']
+    FREQ_DESCS = ['Común', 'Ha\nsucedido', 'Podría\nsuceder',
+                  'Raro que\nsuceda', 'Práct.\nimposible']
+
+    COLS = [0.45*cm, 2.7*cm, 0.45*cm, 2.88*cm, 2.88*cm, 2.88*cm, 2.88*cm, 2.88*cm]
+    RH   = [0.55*cm, 0.75*cm, 0.75*cm, 0.75*cm, 0.75*cm, 0.75*cm,
+             0.45*cm, 1.0*cm, 0.45*cm]
+
+    sev_text = 'S\nE\nV\nE\nR\nI\nD\nA\nD'
+    table_data = [
+        ['P → / S ↓', '', '', 'A', 'B', 'C', 'D', 'E'],
+        [sev_text, SEV_LABELS[0], SEV_NUMS[0]] + MATRIX[0],
+        ['',       SEV_LABELS[1], SEV_NUMS[1]] + MATRIX[1],
+        ['',       SEV_LABELS[2], SEV_NUMS[2]] + MATRIX[2],
+        ['',       SEV_LABELS[3], SEV_NUMS[3]] + MATRIX[3],
+        ['',       SEV_LABELS[4], SEV_NUMS[4]] + MATRIX[4],
+        ['', '', '', 'A', 'B', 'C', 'D', 'E'],
+        ['', '', ''] + FREQ_DESCS,
+        ['', '', '', 'FRECUENCIA', '', '', '', ''],
+    ]
+
+    style_cmds = [
+        ('FONTNAME',      (0,0), (-1,-1), 'Helvetica'),
+        ('FONTSIZE',      (0,0), (-1,-1), 7),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('GRID',          (0,0), (-1,-1), 0.3, colors.white),
+        ('TOPPADDING',    (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('LEFTPADDING',   (0,0), (-1,-1), 2),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 2),
+        ('SPAN',          (0,0), (2,0)),
+        ('BACKGROUND',    (0,0), (2,0), NAVY),
+        ('TEXTCOLOR',     (0,0), (2,0), colors.white),
+        ('FONTNAME',      (0,0), (2,0), 'Helvetica-Bold'),
+        ('BACKGROUND',    (3,0), (7,0), NAVY),
+        ('TEXTCOLOR',     (3,0), (7,0), colors.white),
+        ('FONTNAME',      (3,0), (7,0), 'Helvetica-Bold'),
+        ('FONTSIZE',      (3,0), (7,0), 8),
+        ('SPAN',          (0,1), (0,5)),
+        ('BACKGROUND',    (0,1), (0,5), PURPLE),
+        ('TEXTCOLOR',     (0,1), (0,5), colors.white),
+        ('FONTNAME',      (0,1), (0,5), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0,1), (0,5), 6),
+        ('BACKGROUND',    (1,1), (1,5), colors.HexColor('#EDE7F6')),
+        ('TEXTCOLOR',     (1,1), (1,5), PURPLE),
+        ('FONTNAME',      (1,1), (1,5), 'Helvetica-Bold'),
+        ('FONTSIZE',      (1,1), (1,5), 7),
+        ('ALIGN',         (1,1), (1,5), 'LEFT'),
+        ('LEFTPADDING',   (1,1), (1,5), 4),
+        ('BACKGROUND',    (2,1), (2,5), PURPLE),
+        ('TEXTCOLOR',     (2,1), (2,5), colors.white),
+        ('FONTNAME',      (2,1), (2,5), 'Helvetica-Bold'),
+        ('FONTSIZE',      (2,1), (2,5), 8),
+        ('BACKGROUND',    (3,6), (7,6), NAVY),
+        ('TEXTCOLOR',     (3,6), (7,6), colors.white),
+        ('FONTNAME',      (3,6), (7,6), 'Helvetica-Bold'),
+        ('BACKGROUND',    (0,6), (2,6), colors.HexColor('#F0EEF8')),
+        ('BACKGROUND',    (3,7), (7,7), colors.HexColor('#F5F5F5')),
+        ('FONTSIZE',      (3,7), (7,7), 6),
+        ('BACKGROUND',    (0,7), (2,7), colors.white),
+        ('SPAN',          (3,8), (7,8)),
+        ('BACKGROUND',    (3,8), (7,8), AMBER),
+        ('TEXTCOLOR',     (3,8), (7,8), colors.white),
+        ('FONTNAME',      (3,8), (7,8), 'Helvetica-Bold'),
+        ('FONTSIZE',      (3,8), (7,8), 8),
+        ('BACKGROUND',    (0,8), (2,8), colors.white),
+    ]
+    for r, row_vals in enumerate(MATRIX):
+        for c, val in enumerate(row_vals):
+            trow, tcol = r + 1, c + 3
+            style_cmds += [
+                ('BACKGROUND', (tcol,trow), (tcol,trow), cell_bg(val)),
+                ('TEXTCOLOR',  (tcol,trow), (tcol,trow), cell_tc(val)),
+                ('FONTNAME',   (tcol,trow), (tcol,trow), 'Helvetica-Bold'),
+                ('FONTSIZE',   (tcol,trow), (tcol,trow), 9),
+            ]
+
+    matriz_t = Table(table_data, colWidths=COLS, rowHeights=RH)
+    matriz_t.setStyle(TableStyle(style_cmds))
+
+    leg_style = ParagraphStyle('leg', fontSize=6.5, fontName='Helvetica', leading=8)
+    def leg_bold(txt, color):
+        return Paragraph(f'<b><font color="{color}">{txt}</font></b>',
+                         ParagraphStyle('', fontSize=8, fontName='Helvetica-Bold',
+                                        alignment=1, leading=10))
+
+    leg_data = [
+        ['NIVEL', 'DESCRIPCIÓN', 'PLAZO DE\nMEDIDA CORRECTIVA'],
+        [leg_bold('ALTO', 'white'),
+         Paragraph('Riesgo intolerable. Requiere controles inmediatos. '
+                   'Si no se puede controlar el peligro, se paralizan los trabajos.', leg_style),
+         leg_bold('0-24 HORAS', '#212121')],
+        [leg_bold('MEDIO', '#212121'),
+         Paragraph('Iniciar medidas para eliminar/reducir el riesgo. '
+                   'Evaluar si la acción se puede ejecutar de manera inmediata.', leg_style),
+         leg_bold('0-72 HORAS', '#212121')],
+        [leg_bold('BAJO', 'white'),
+         Paragraph('Este riesgo puede ser tolerable.', leg_style),
+         leg_bold('1 MES', 'white')],
+    ]
+    leg_t = Table(leg_data, colWidths=[2.5*cm, 12*cm, 3.5*cm],
+                  rowHeights=[0.55*cm, 1.0*cm, 1.0*cm, 0.7*cm])
+    leg_t.setStyle(TableStyle([
+        ('FONTNAME',      (0,0), (-1,0),  'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0), (-1,0),  7),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('BACKGROUND',    (0,0), (-1,0),  NAVY),
+        ('TEXTCOLOR',     (0,0), (-1,0),  colors.white),
+        ('BACKGROUND',    (0,1), (0,1),   RED),
+        ('BACKGROUND',    (0,2), (0,2),   YELLOW),
+        ('BACKGROUND',    (0,3), (0,3),   GREEN),
+        ('GRID',          (0,0), (-1,-1), 0.4, colors.grey),
+        ('TOPPADDING',    (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('ALIGN',         (1,1), (1,-1),  'LEFT'),
+        ('LEFTPADDING',   (1,1), (1,-1),  4),
+    ]))
+
+    title_t = Table([['Riesgo = Probabilidad x Severidad']],
+                    colWidths=[18*cm], rowHeights=[0.65*cm])
+    title_t.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (0,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (0,0), 9),
+        ('ALIGN',    (0,0), (0,0), 'CENTER'),
+        ('VALIGN',   (0,0), (0,0), 'MIDDLE'),
+        ('BOX',      (0,0), (0,0), 1.2, NAVY),
+    ]))
+
+    return [
+        Spacer(1, 0.5*cm),
+        title_t,
+        Paragraph('Matriz de Evaluación de Riesgo',
+                  ParagraphStyle('sub', fontSize=8, fontName='Helvetica',
+                                 spaceBefore=4, spaceAfter=4)),
+        matriz_t,
+        Spacer(1, 0.2*cm),
+        leg_t,
+    ]
+
 def generar_pdf_iperc(registro, peligros, firma=None, peligros_adicionales=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4,
@@ -224,7 +393,13 @@ def generar_pdf_iperc(registro, peligros, firma=None, peligros_adicionales=None)
 
     elementos.append(Spacer(1, 0.5*cm))
 
-    # ── PIE DE PÁGINA — usar datetime.now(LIMA) siempre ──
+    # ── MATRIZ DE RIESGO P×S ─────────────────
+    for elem in _tabla_matriz_riesgo():
+        elementos.append(elem)
+
+    elementos.append(Spacer(1, 0.3*cm))
+
+    # ── PIE DE PÁGINA ─────────────────────────
     elementos.append(Paragraph(
         f'Documento generado el {datetime.now(LIMA).strftime("%d/%m/%Y %H:%M:%S")} '
         f'· IPERC Digital · UPN Cajamarca 2026',
