@@ -12,121 +12,140 @@
         .btn-primary { background-color: #F97316; border-color: #F97316; }
         .btn-primary:hover { background-color: #C2520B; border-color: #C2520B; }
 
-        /* ── Accesibilidad ── */
-.acc-size-btn{background:transparent;border:1px solid #444;color:#ccc;
-  border-radius:4px;padding:1px 7px;cursor:pointer;font-weight:700;line-height:1.4;transition:.15s}
-.acc-size-btn.active,.acc-size-btn:hover{background:#F97316;border-color:#F97316;color:white}
-.acc-tool-btn{background:transparent;border:1px solid #444;color:#ccc;
-  border-radius:4px;padding:2px 8px;cursor:pointer;font-size:14px;transition:.15s}
-.acc-tool-btn.active{background:#F97316;border-color:#F97316;color:white}
-.acc-tool-btn:hover{border-color:#F97316;color:#F97316}
+        /* ── Loading Overlay ── */
+        #loading-overlay{
+          display:none;position:fixed;inset:0;
+          background:rgba(26,26,46,0.82);
+          z-index:99999;
+          flex-direction:column;
+          align-items:center;justify-content:center;
+          backdrop-filter:blur(2px)}
+        #loading-overlay .spinner-border{
+          width:3.5rem;height:3.5rem;
+          border-width:.35em;
+          color:#F97316}
+        #loading-overlay .loading-title{
+          color:white;font-size:1.2rem;
+          font-weight:600;margin-top:1.2rem}
+        #loading-overlay .loading-sub{
+          color:rgba(255,255,255,.6);
+          font-size:.9rem;margin-top:.35rem}
+        #loading-overlay .loading-bar-wrap{
+          width:220px;height:4px;
+          background:rgba(255,255,255,.15);
+          border-radius:2px;margin-top:1.4rem;overflow:hidden}
+        #loading-overlay .loading-bar{
+          height:100%;width:0%;
+          background:#F97316;border-radius:2px;
+          animation:loadbar 8s linear forwards}
+        @keyframes loadbar{
+          0%{width:0%} 60%{width:75%} 90%{width:90%} 100%{width:95%}}
 
-body.acc-large   {font-size:120% !important}
-body.acc-xlarge  {font-size:130% !important}
-body.acc-small   {font-size:100%  !important}
-body.acc-contrast{filter:contrast(1.5) brightness(1.05) !important}
-body.acc-gray    {filter:grayscale(1) !important}
-body.acc-dyslexia *{font-family:Arial,sans-serif !important;
-  letter-spacing:.06em !important;word-spacing:.16em !important;line-height:1.8 !important}
-body.acc-links a{text-decoration:underline !important;
-  background:#fff176 !important;color:#000 !important;padding:0 2px}
-body.acc-cursor,body.acc-cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M6 2l20 20-8-2-4 8z' fill='%23F97316' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E") 0 0,auto !important}
+        /* ── Accessibility Widget ── */
+        #acc-fab{position:fixed;bottom:24px;left:24px;width:52px;height:52px;
+          background:#F97316;border:none;border-radius:50%;cursor:pointer;z-index:9999;
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 3px 12px rgba(249,115,22,.4);transition:transform .2s}
+        #acc-fab:hover{transform:scale(1.1)}
+        #acc-fab i{color:white;font-size:24px}
+        #acc-panel{position:fixed;bottom:86px;left:24px;width:300px;background:white;
+          border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9998;
+          display:none;overflow:hidden}
+        #acc-panel.open{display:block}
+        .acc-ph{background:#1a1a2e;color:white;padding:13px 16px;
+          display:flex;justify-content:space-between;align-items:center}
+        .acc-ph span{font-size:13px;font-weight:600}
+        .acc-ph button{background:rgba(255,255,255,.15);border:none;color:white;
+          width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;
+          display:flex;align-items:center;justify-content:center}
+        .acc-ph button:hover{background:rgba(255,255,255,.3)}
+        .acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px}
+        .acc-card{background:#f8f9fa;border:1.5px solid #e9ecef;border-radius:10px;
+          padding:14px 10px;cursor:pointer;display:flex;flex-direction:column;
+          align-items:center;gap:8px;transition:all .15s;font-family:inherit;width:100%}
+        .acc-card i{font-size:26px;color:#555}
+        .acc-card span{font-size:12px;color:#444;text-align:center;line-height:1.3}
+        .acc-card:hover{border-color:#F97316;background:#fff5ee}
+        .acc-card.active{background:#F97316;border-color:#F97316}
+        .acc-card.active i,.acc-card.active span{color:white}
+        .acc-reset-btn{display:flex;align-items:center;justify-content:center;gap:6px;
+          width:calc(100% - 28px);margin:0 14px 14px;padding:10px;background:none;
+          border:1px solid #dee2e6;border-radius:8px;color:#666;font-size:13px;
+          cursor:pointer;font-family:inherit;transition:.15s}
+        .acc-reset-btn:hover{border-color:#F97316;color:#F97316}
 
+        body.acc-contrast{filter:contrast(1.6) brightness(1.05) !important}
+        body.acc-gray    {filter:grayscale(1) !important}
+        body.acc-large  *{font-size:115% !important}
+        body.acc-spacing *{letter-spacing:.08em !important;word-spacing:.2em !important;line-height:1.9 !important}
+        body.acc-dyslexia *{font-family:Arial,sans-serif !important;letter-spacing:.06em !important;line-height:1.8 !important}
+        body.acc-links  a{text-decoration:underline !important;background:#fff176 !important;color:#000 !important;padding:0 2px !important}
+        body.acc-hideimg img{visibility:hidden !important}
+        body.acc-anim   *{animation:none !important;transition:none !important}
+        body.acc-cursor,body.acc-cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M6 2l20 20-8-2-4 8z' fill='%23F97316' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E") 0 0,auto !important}
     </style>
 
     <link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#F97316">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="IPERC Digital">
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/static/sw.js')
-                .then(reg => console.log('SW registrado:', reg.scope))
-                .catch(err => console.log('SW error:', err));
-        });
-    }
-</script>
+    <meta name="theme-color" content="#F97316">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="IPERC Digital">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('SW registrado:', reg.scope))
+                    .catch(err => console.log('SW error:', err));
+            });
+        }
+    </script>
 </head>
-
-
 
 <body>
     {% if current_user.is_authenticated %}
     <nav class="navbar navbar-dark bg-dark">
         <div class="container">
-
-           <span class="navbar-brand">
+            <span class="navbar-brand">
                 <i class="bi bi-shield-check"></i> IPERC Digital
             </span>
             <div class="d-flex align-items-center gap-3">
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light btn-sm">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
 
-           {% if current_user.rol in ['supervisor', 'admin'] %}
-            <a href="{{ url_for('supervisor.panel') }}" class="btn btn-warning btn-sm position-relative">
-                <i class="bi bi-clipboard-check"></i> Panel Supervisor
-                {% if pendientes_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                    {{ pendientes_count }}
-                </span>
+                {% if current_user.rol in ['supervisor', 'admin'] %}
+                <a href="{{ url_for('supervisor.panel') }}" class="btn btn-warning btn-sm position-relative">
+                    <i class="bi bi-clipboard-check"></i> Panel Supervisor
+                    {% if pendientes_count > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ pendientes_count }}
+                    </span>
+                    {% endif %}
+                </a>
                 {% endif %}
-            </a>
-            {% endif %}
 
-            <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-outline-light btn-sm">
-            <i class="bi bi-plus"></i> Nuevo IPERC
-            </a>
+                <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-plus"></i> Nuevo IPERC
+                </a>
 
-         <a href="{{ url_for('main.mis_registros') }}" class="btn btn-outline-light btn-sm">
-         <i class="bi bi-list-ul"></i> Mis Registros
-         </a>
+                <a href="{{ url_for('main.mis_registros') }}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-list-ul"></i> Mis Registros
+                </a>
 
-         {% if current_user.rol == 'admin' %}
-        <a href="{{ url_for('admin.panel') }}" class="btn btn-danger btn-sm">
-            <i class="bi bi-gear"></i> Admin
-        </a>
-        {% endif %}
+                {% if current_user.rol == 'admin' %}
+                <a href="{{ url_for('admin.panel') }}" class="btn btn-danger btn-sm">
+                    <i class="bi bi-gear"></i> Admin
+                </a>
+                {% endif %}
 
-        <span class="text-white">{{ current_user.nombre }}</span>
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
-        Salir
-        </a>
-        </div>
-
+                <span class="text-white">{{ current_user.nombre }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+                    Salir
+                </a>
+            </div>
         </div>
     </nav>
     {% endif %}
-
-    <!-- ── Barra de Accesibilidad ── -->
-    <div id="acc-bar" style="background:#1a1a2e;border-bottom:2px solid #F97316;padding:4px 0;">
-      <div class="container d-flex align-items-center justify-content-end gap-2">
-        <span style="color:#aaa;font-size:11px;margin-right:4px;">
-          <i class="bi bi-universal-access text-warning"></i> Accesibilidad:
-        </span>
-
-        <!-- Tamaño texto -->
-        <button onclick="setSize('small')"  id="s-small"  class="acc-size-btn" style="font-size:10px">A−</button>
-        <button onclick="setSize('normal')" id="s-normal" class="acc-size-btn active" style="font-size:12px">A</button>
-        <button onclick="setSize('large')"  id="s-large"  class="acc-size-btn" style="font-size:14px">A+</button>
-        <button onclick="setSize('xlarge')" id="s-xlarge" class="acc-size-btn" style="font-size:16px">A++</button>
-
-        <span style="color:#444;margin:0 4px">|</span>
-
-        <!-- Toggles -->
-        <button onclick="togBtn(this,'contrast')"  class="acc-tool-btn" title="Alto contraste"><i class="bi bi-circle-half"></i></button>
-        <button onclick="togBtn(this,'gray')"      class="acc-tool-btn" title="Escala de grises"><i class="bi bi-brightness-low"></i></button>
-        <button onclick="togBtn(this,'links')"     class="acc-tool-btn" title="Resaltar enlaces"><i class="bi bi-link-45deg"></i></button>
-        <button onclick="togBtn(this,'dyslexia')"  class="acc-tool-btn" title="Fuente dislexia"><i class="bi bi-fonts"></i></button>
-        <button onclick="togBtn(this,'cursor')"    class="acc-tool-btn" title="Cursor grande"><i class="bi bi-cursor"></i></button>
-
-        <span style="color:#444;margin:0 4px">|</span>
-        <button onclick="resetAll()" class="acc-tool-btn" title="Restablecer todo"><i class="bi bi-arrow-counterclockwise"></i></button>
-      </div>
-    </div>
-
 
     <div class="container mt-4">
         {% with messages = get_flashed_messages() %}
@@ -141,56 +160,146 @@ body.acc-cursor,body.acc-cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns='h
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-const ACC_KEY='iperc_acc';
-const SIZES=['small','normal','large','xlarge'];
-const TOGGLES=['contrast','gray','links','dyslexia','cursor'];
+    <!-- ── Loading Overlay ── -->
+    <div id="loading-overlay">
+        <div class="spinner-border" role="status" aria-hidden="true"></div>
+        <p class="loading-title">Procesando registro IPERC...</p>
+        <p class="loading-sub">Por favor espere, no cierre la pantalla.</p>
+        <div class="loading-bar-wrap">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+    </div>
 
-function togBtn(btn,name){
-  const on = btn.classList.toggle('active');
-  document.body.classList.toggle('acc-'+name, on);
-  save();
-}
-function setSize(s){
-  SIZES.forEach(sz=>{
-    document.body.classList.remove('acc-'+sz);
-    document.getElementById('s-'+sz).classList.remove('active');
-  });
-  if(s!=='normal') document.body.classList.add('acc-'+s);
-  document.getElementById('s-'+s).classList.add('active');
-  save();
-}
-function save(){
-  const state={size:SIZES.find(s=>document.body.classList.contains('acc-'+s))||'normal'};
-  TOGGLES.forEach(t=>state[t]=document.getElementById('s-'+t)||
-    document.querySelector(`[onclick*="togBtn"][onclick*="${t}"]`)?.classList.contains('active')||false);
-  TOGGLES.forEach(t=>state[t]=document.body.classList.contains('acc-'+t));
-  localStorage.setItem(ACC_KEY,JSON.stringify(state));
-}
-function resetAll(){
-  SIZES.forEach(s=>document.body.classList.remove('acc-'+s));
-  TOGGLES.forEach(t=>{
-    document.body.classList.remove('acc-'+t);
-    document.querySelector(`[onclick*="'${t}'"]`)?.classList.remove('active');
-  });
-  setSize('normal');
-  localStorage.removeItem(ACC_KEY);
-}
-function load(){
-  try{
-    const st=JSON.parse(localStorage.getItem(ACC_KEY));
-    if(!st) return;
-    setSize(st.size||'normal');
-    TOGGLES.forEach(t=>{
-      if(st[t]){
-        document.body.classList.add('acc-'+t);
-        document.querySelector(`[onclick*="'${t}'"]`)?.classList.add('active');
-      }
-    });
-  }catch(e){}
-}
-load();
-</script>
+    <!-- ── Widget de Accesibilidad ── -->
+    <button id="acc-fab" onclick="toggleAcc()" aria-label="Menú de accesibilidad">
+        <i class="bi bi-universal-access"></i>
+    </button>
+
+    <div id="acc-panel" role="dialog" aria-label="Menú de accesibilidad">
+        <div class="acc-ph">
+            <span><i class="bi bi-universal-access me-1"></i> Menú de Accesibilidad</span>
+            <button onclick="toggleAcc()" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="acc-grid">
+            <button class="acc-card" onclick="accToggle(this,'contrast')" data-acc="contrast">
+                <i class="bi bi-circle-half"></i><span>Contraste +</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'links')" data-acc="links">
+                <i class="bi bi-link-45deg"></i><span>Resaltar enlaces</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'large')" data-acc="large">
+                <i class="bi bi-fonts"></i><span>Agrandar texto</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'spacing')" data-acc="spacing">
+                <i class="bi bi-distribute-horizontal"></i><span>Espaciado texto</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'anim')" data-acc="anim">
+                <i class="bi bi-pause-circle"></i><span>Detener anim.</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'hideimg')" data-acc="hideimg">
+                <i class="bi bi-image-alt"></i><span>Ocultar imágenes</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'dyslexia')" data-acc="dyslexia">
+                <i class="bi bi-type"></i><span>Apto dislexia</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'cursor')" data-acc="cursor">
+                <i class="bi bi-cursor"></i><span>Cursor grande</span>
+            </button>
+            <button class="acc-card" onclick="accToggle(this,'gray')" data-acc="gray">
+                <i class="bi bi-brightness-low"></i><span>Escala de grises</span>
+            </button>
+        </div>
+        <button class="acc-reset-btn" onclick="accReset()">
+            <i class="bi bi-arrow-counterclockwise"></i> Restablecer todo
+        </button>
+    </div>
+
+    <script>
+        /* ── Loading Overlay ── */
+        const overlay = document.getElementById('loading-overlay');
+
+        // Mensajes rotativos según el formulario
+        const MENSAJES = {
+            'iperc'      : { titulo: 'Enviando registro IPERC...', sub: 'Guardando peligros, firma y GPS. No cierre la pantalla.' },
+            'supervisor' : { titulo: 'Procesando aprobación...', sub: 'Guardando firma del supervisor. Por favor espere.' },
+            'default'    : { titulo: 'Procesando...', sub: 'Por favor espere, no cierre la pantalla.' },
+        };
+
+        function mostrarLoading(tipo){
+            const m = MENSAJES[tipo] || MENSAJES['default'];
+            overlay.querySelector('.loading-title').textContent = m.titulo;
+            overlay.querySelector('.loading-sub').textContent   = m.sub;
+            // Reiniciar barra
+            const bar = document.getElementById('loading-bar');
+            bar.style.animation = 'none';
+            bar.offsetHeight;   // reflow
+            bar.style.animation = '';
+            overlay.style.display = 'flex';
+        }
+
+        // Activar en formularios con data-loading
+        document.addEventListener('submit', function(e){
+            const form = e.target;
+            if(form.dataset.loading){
+                mostrarLoading(form.dataset.loading);
+                // Deshabilitar botón submit para evitar doble envío
+                const btn = form.querySelector('[type="submit"], button:not([type="button"])');
+                if(btn){
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Procesando...';
+                }
+            }
+        });
+
+        // Ocultar overlay si el usuario vuelve con el botón atrás
+        window.addEventListener('pageshow', function(e){
+            if(e.persisted) overlay.style.display = 'none';
+        });
+
+        /* ── Accesibilidad ── */
+        const ACC_KEY = 'iperc_acc';
+        const FEATS   = ['contrast','links','large','spacing','anim','hideimg','dyslexia','cursor','gray'];
+
+        function toggleAcc(){
+            document.getElementById('acc-panel').classList.toggle('open');
+        }
+        function accToggle(btn, name){
+            btn.classList.toggle('active');
+            document.body.classList.toggle('acc-' + name);
+            accSave();
+        }
+        function accSave(){
+            const s = {};
+            FEATS.forEach(f => s[f] = document.body.classList.contains('acc-' + f));
+            localStorage.setItem(ACC_KEY, JSON.stringify(s));
+        }
+        function accReset(){
+            FEATS.forEach(f => {
+                document.body.classList.remove('acc-' + f);
+                document.querySelector(`.acc-card[data-acc="${f}"]`)?.classList.remove('active');
+            });
+            localStorage.removeItem(ACC_KEY);
+        }
+        function accLoad(){
+            try {
+                const s = JSON.parse(localStorage.getItem(ACC_KEY));
+                if(!s) return;
+                FEATS.forEach(f => {
+                    if(s[f]){
+                        document.body.classList.add('acc-' + f);
+                        document.querySelector(`.acc-card[data-acc="${f}"]`)?.classList.add('active');
+                    }
+                });
+            } catch(e){}
+        }
+        document.addEventListener('click', e => {
+            const p = document.getElementById('acc-panel');
+            const b = document.getElementById('acc-fab');
+            if(p?.classList.contains('open') && !p.contains(e.target) && !b.contains(e.target))
+                p.classList.remove('open');
+        });
+        accLoad();
+    </script>
 
 </body>
 </html>
