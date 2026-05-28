@@ -240,7 +240,7 @@
         // Activar en formularios con data-loading
         document.addEventListener('submit', function(e){
             const form = e.target;
-            if(form.dataset.loading){
+            if(form.dataset.loading && navigator.onLine){
                 mostrarLoading(form.dataset.loading);
                 // Deshabilitar botón submit para evitar doble envío
                 const btn = form.querySelector('[type="submit"], button:not([type="button"])');
