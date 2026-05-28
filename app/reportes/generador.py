@@ -206,7 +206,8 @@ def _tabla_matriz_riesgo():
         leg_t,
     ]
 
-def generar_pdf_iperc(registro, peligros, firma=None, peligros_adicionales=None):
+def generar_pdf_iperc(registro, peligros, firma=None, 
+                      peligros_adicionales=None, firma_supervisor=None):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4,
         rightMargin=1.5*cm, leftMargin=1.5*cm,
@@ -360,38 +361,57 @@ def generar_pdf_iperc(registro, peligros, firma=None, peligros_adicionales=None)
         elementos.append(tabla_pa)
         elementos.append(Spacer(1, 0.3*cm))
 
-    # ── FIRMA DIGITAL ─────────────────────────
-    elementos.append(Paragraph('FIRMA DIGITAL DEL TRABAJADOR', estilo_seccion))
+   # ── FIRMAS DIGITALES ─────────────────────────────────────────
+    elementos.append(Paragraph('FIRMAS DIGITALES', estilo_seccion))
 
-    if firma and firma.firma_imagen:
+    def _imagen_firma(f):
+        """Devuelve un Image de ReportLab o None si falla."""
         try:
-            img_data   = firma.firma_imagen.split(',')[1]
-            img_bytes  = base64.b64decode(img_data)
-            img_buffer = BytesIO(img_bytes)
-            img        = Image(img_buffer, width=6*cm, height=2.5*cm)
-            gps_firma  = (f"{firma.lat:.6f}, {firma.lon:.6f}"
-                          if getattr(firma, 'lat', None) else 'No registrado')
-            datos_firma = [
-                [img, ''],
-                [f"Trabajador: {registro.registrado_por.nombre} {registro.registrado_por.apellido}",
-                 f"DNI: {registro.registrado_por.dni}"],
-                [f"Fecha y hora: {_fmt_fecha(firma.timestamp)}",
-                 f"GPS: {gps_firma}"],
-            ]
-            tabla_firma = Table(datos_firma, colWidths=[9*cm, 9*cm])
-            tabla_firma.setStyle(TableStyle([
-                ('FONTSIZE', (0,0), (-1,-1), 8),
-                ('GRID',     (0,0), (-1,-1), 0.5, colors.grey),
-                ('PADDING',  (0,0), (-1,-1), 5),
-            ]))
-            elementos.append(tabla_firma)
+            data = f.firma_imagen.split(',')[1] if ',' in f.firma_imagen else f.firma_imagen
+            return Image(BytesIO(base64.b64decode(data)), width=6*cm, height=2.5*cm)
         except Exception:
-            elementos.append(Paragraph(
-                'Firma registrada digitalmente en el sistema.', estilo_normal))
-    else:
-        elementos.append(Paragraph('Sin firma registrada.', estilo_normal))
+            return None
 
+    # Fila imagen
+    img_t = _imagen_firma(firma) if firma and firma.firma_imagen else \
+            Paragraph('Sin firma registrada.', estilo_normal)
+    img_s = _imagen_firma(firma_supervisor) if firma_supervisor and firma_supervisor.firma_imagen else \
+            Paragraph('Firma del supervisor no registrada.', estilo_normal)
+
+    # Datos para celdas
+    sup   = registro.supervisor
+    t_ts  = _fmt_fecha(firma.timestamp)            if firma            else '—'
+    s_ts  = _fmt_fecha(firma_supervisor.timestamp) if firma_supervisor else '—'
+    t_gps = (f"{firma.lat:.6f}, {firma.lon:.6f}"
+             if firma and firma.lat else 'No registrado')
+    s_gps = (f"{firma_supervisor.lat:.6f}, {firma_supervisor.lon:.6f}"
+             if firma_supervisor and firma_supervisor.lat else 'No registrado')
+
+    tabla_firmas = Table([
+        ['TRABAJADOR', 'SUPERVISOR'],
+        [img_t,        img_s],
+        [f"Nombre: {registro.registrado_por.nombre} {registro.registrado_por.apellido}",
+         f"Nombre: {sup.nombre+' '+sup.apellido if sup else '—'}"],
+        [f"DNI: {registro.registrado_por.dni}",
+         f"DNI: {sup.dni if sup else '—'}"],
+        [f"Fecha y hora: {t_ts}",  f"Fecha y hora: {s_ts}"],
+        [f"GPS: {t_gps}",          f"GPS: {s_gps}"],
+    ], colWidths=[9*cm, 9*cm])
+
+    tabla_firmas.setStyle(TableStyle([
+        ('FONTNAME',   (0,0),  (-1,-1), 'Helvetica'),
+        ('FONTSIZE',   (0,0),  (-1,-1), 8),
+        ('FONTNAME',   (0,0),  (-1,0),  'Helvetica-Bold'),
+        ('BACKGROUND', (0,0),  (0,0),   colors.HexColor('#f8f9fa')),
+        ('BACKGROUND', (1,0),  (1,0),   colors.HexColor('#e8f4fd')),
+        ('GRID',       (0,0),  (-1,-1), 0.5, colors.grey),
+        ('PADDING',    (0,0),  (-1,-1), 5),
+        ('ALIGN',      (0,0),  (-1,0),  'CENTER'),
+        ('VALIGN',     (0,1),  (-1,1),  'MIDDLE'),
+    ]))
+    elementos.append(tabla_firmas)
     elementos.append(Spacer(1, 0.5*cm))
+
 
     # ── MATRIZ DE RIESGO P×S ─────────────────
     for elem in _tabla_matriz_riesgo():

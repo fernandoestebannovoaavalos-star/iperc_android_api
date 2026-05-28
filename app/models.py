@@ -132,6 +132,7 @@ class FirmaDigital(db.Model):
     timestamp   = db.Column(db.DateTime(timezone=True), default=_ahora_lima)
     lat         = db.Column(db.Float,    nullable=True)
     lon         = db.Column(db.Float,    nullable=True)
+    tipo        = db.Column(db.String(20), default='trabajador')
     usuario     = db.relationship('Usuario', foreign_keys=[usuario_id])
 
 

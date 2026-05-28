@@ -8,21 +8,21 @@ from app.reportes.generador import generar_pdf_iperc
 @login_required
 def generar_pdf(registro_id):
     registro = RegistroIPERC.query.get_or_404(registro_id)
-
     if current_user.rol == 'trabajador' and registro.usuario_id != current_user.id:
         abort(403)
 
-    peligros    = PeligroBase.query.filter_by(actividad_id=registro.actividad_id).all()
-    firma       = FirmaDigital.query.filter_by(registro_id=registro_id).first()
-    adicionales = PeligroAdicional.query.filter_by(registro_id=registro_id).all()
+    peligros         = PeligroBase.query.filter_by(actividad_id=registro.actividad_id).all()
+    adicionales      = PeligroAdicional.query.filter_by(registro_id=registro_id).all()
+    firma_trabajador = FirmaDigital.query.filter_by(
+                           registro_id=registro_id, tipo='trabajador').first()
+    firma_supervisor = FirmaDigital.query.filter_by(
+                           registro_id=registro_id, tipo='supervisor').first()
 
-    buffer = generar_pdf_iperc(registro, peligros, firma,
-                               peligros_adicionales=adicionales)
-
-    return send_file(
-        buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=f'{registro.codigo}.pdf'
+    buffer = generar_pdf_iperc(
+        registro, peligros, firma_trabajador,
+        peligros_adicionales = adicionales,
+        firma_supervisor     = firma_supervisor
     )
-
+    return send_file(buffer, mimetype='application/pdf',
+                     as_attachment=True,
+                     download_name=f'{registro.codigo}.pdf')
