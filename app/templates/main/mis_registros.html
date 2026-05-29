@@ -8,9 +8,18 @@
             <i class="bi bi-list-ul" style="color:#F97316;"></i>
             Mis Registros IPERC
         </h4>
-        <p class="text-muted">Historial completo de tus registros</p>
+        <p class="text-muted">Historial completo de tus registros activos</p>
     </div>
-    <div class="col-auto">
+    <div class="col-auto d-flex gap-2">
+        {% if archivados %}
+        <button class="btn btn-outline-secondary btn-sm"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#seccion-archivados">
+            <i class="bi bi-archive"></i>
+            Archivados ({{ archivados|length }})
+        </button>
+        {% endif %}
         <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-primary">
             <i class="bi bi-plus"></i> Nuevo IPERC
         </a>
@@ -18,7 +27,7 @@
 </div>
 
 {% if registros %}
-<div class="card shadow-sm">
+<div class="card shadow-sm mb-4">
     <div class="card-body p-0">
         <div style="overflow-x:auto;">
         <table class="table table-hover mb-0">
@@ -32,6 +41,7 @@
                     <th>Firma</th>
                     <th>Estado</th>
                     <th>PDF</th>
+                    <th>Archivar</th>
                 </tr>
             </thead>
             <tbody>
@@ -40,8 +50,6 @@
                     <td><small class="font-monospace">{{ r.codigo }}</small></td>
                     <td><small>{{ r.area.nombre }}</small></td>
                     <td><small>{{ r.actividad.nombre }}</small></td>
-                    <!-- DESPUÉS -->
-                    <!--<td><small>{{ r.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</small></td>-->
                     <td><small>{{ r.fecha_registro | lima }}</small></td>
                     <td>
                         {% if r.geo_validado %}
@@ -54,7 +62,7 @@
                         {% if r.firmas %}
                             <span class="badge bg-success">✓ Firmado</span>
                         {% else %}
-                            <a href="{{ url_for('iperc.firmar', registro_id=r.id) }}" 
+                            <a href="{{ url_for('iperc.firmar', registro_id=r.id) }}"
                                class="badge bg-warning text-dark">
                                 ✍ Firmar
                             </a>
@@ -70,10 +78,20 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{{ url_for('reportes.generar_pdf', registro_id=r.id) }}" 
+                        <a href="{{ url_for('reportes.generar_pdf', registro_id=r.id) }}"
                            class="btn btn-outline-danger btn-sm" target="_blank">
                             <i class="bi bi-file-pdf"></i>
                         </a>
+                    </td>
+                    <td>
+                        <form action="{{ url_for('main.archivar', id=r.id) }}"
+                              method="POST"
+                              onsubmit="return confirm('¿Archivar el registro {{ r.codigo }}? Seguirá guardado en la base de datos.')">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                    title="Archivar registro">
+                                <i class="bi bi-archive"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
             {% endfor %}
@@ -82,14 +100,14 @@
         </div>
     </div>
     <div class="card-footer text-muted" style="font-size:12px;">
-        Total: {{ registros|length }} registros
+        Total activos: {{ registros|length }} registros
     </div>
 </div>
 {% else %}
-<div class="card shadow-sm">
+<div class="card shadow-sm mb-4">
     <div class="card-body text-center p-5">
         <i class="bi bi-inbox" style="font-size:3rem;color:#ccc;"></i>
-        <h5 class="mt-3 text-muted">No tienes registros aún</h5>
+        <h5 class="mt-3 text-muted">No tienes registros activos</h5>
         <p class="text-muted">Registra tu primer IPERC antes de iniciar tu actividad</p>
         <a href="{{ url_for('iperc.nuevo') }}" class="btn btn-primary">
             <i class="bi bi-plus"></i> Crear primer IPERC
@@ -97,4 +115,66 @@
     </div>
 </div>
 {% endif %}
+
+<!-- ── SECCIÓN ARCHIVADOS ── -->
+{% if archivados %}
+<div class="collapse" id="seccion-archivados">
+    <div class="card shadow-sm border-secondary">
+        <div class="card-header bg-secondary text-white fw-bold">
+            <i class="bi bi-archive"></i> Registros Archivados
+            <small class="fw-normal ms-2">(conservados en BD — no aparecen en dashboard)</small>
+        </div>
+        <div class="card-body p-0">
+            <div style="overflow-x:auto;">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Código</th>
+                        <th>Área</th>
+                        <th>Actividad</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Restaurar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for r in archivados %}
+                    <tr class="text-muted">
+                        <td><small class="font-monospace">{{ r.codigo }}</small></td>
+                        <td><small>{{ r.area.nombre }}</small></td>
+                        <td><small>{{ r.actividad.nombre }}</small></td>
+                        <td><small>{{ r.fecha_registro | lima }}</small></td>
+                        <td>
+                            {% if r.estado == 'aprobado' %}
+                                <span class="badge bg-success">✓ Aprobado</span>
+                            {% elif r.estado == 'pendiente' %}
+                                <span class="badge bg-warning text-dark">⏳ Pendiente</span>
+                            {% else %}
+                                <span class="badge bg-danger">⚠ Observado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="{{ url_for('main.desarchivar', id=r.id) }}"
+                                  method="POST">
+                                <button type="submit"
+                                        class="btn btn-outline-primary btn-sm"
+                                        title="Restaurar registro">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+        <div class="card-footer text-muted" style="font-size:12px;">
+            Total archivados: {{ archivados|length }} registros
+            · Conservados en BD conforme DS 005-2012-TR (5 años mínimo)
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}

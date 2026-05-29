@@ -106,6 +106,7 @@ class RegistroIPERC(db.Model):
     lat           = db.Column(db.Float,      nullable=True)
     lon           = db.Column(db.Float,      nullable=True)
     geo_validado  = db.Column(db.Boolean,    default=False)
+    archivado = db.Column(db.Boolean, default=False)  # ← línea nueva
     # FIX 1: utcnow deprecado → _ahora_utc
     fecha_registro= db.Column(db.DateTime(timezone=True), default=_ahora_lima)
     supervisor_id = db.Column(db.Integer,    db.ForeignKey('usuarios.id'), nullable=True)
