@@ -1,15 +1,14 @@
-from flask import Flask, redirect, url_for, flash, request, Response
+from flask import Flask, redirect, url_for, flash, request, Response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-
 from config import Config
 from functools import wraps
-
 from flask_login import LoginManager, current_user
 from flask_mail import Mail
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 import threading
+
 
 mail = Mail()
 
@@ -84,6 +83,38 @@ def solo_rol(*roles):
         return decorated
     return decorador
 
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Si ya está autenticado por sesión web, continúa normal
+        if current_user.is_authenticated:
+            return f(*args, **kwargs)
+        
+        # Verificar token JWT en el header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return redirect(url_for('auth.login'))
+        
+        token = auth_header.split(' ')[1]
+        try:
+            import jwt
+            from flask import current_app
+            from app.models import Usuario
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            usuario = Usuario.query.get(data['user_id'])
+            if not usuario:
+                return jsonify({'error': 'Usuario no encontrado'}), 401
+            # Simular login temporal para esta petición
+            from flask_login import login_user
+            login_user(usuario)
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token expirado'}), 401
+        except Exception:
+            return jsonify({'error': 'Token inválido'}), 401
+        
+        return f(*args, **kwargs)
+    return decorated
 
 def create_app():
     app = Flask(__name__)

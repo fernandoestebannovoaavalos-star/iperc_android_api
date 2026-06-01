@@ -2,10 +2,9 @@ from flask import render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.iperc import iperc
 from app.models import Area, Actividad, PeligroBase, RegistroIPERC, FirmaDigital, PeligroAdicional
-from app import db, solo_rol
 from datetime import datetime, timezone, timedelta
 import base64
-
+from app import db, solo_rol, token_required
 # Zona horaria Lima / Cajamarca (UTC-5)
 LIMA = timezone(timedelta(hours=-5))
 
@@ -169,3 +168,140 @@ def guardar_firma():
 
     flash('✓ Firma registrada correctamente.')
     return redirect(url_for('main.dashboard'))
+
+# ─────────────────────────────────────────
+# API REST para Android
+# ─────────────────────────────────────────
+
+@iperc.route('/api/areas', methods=['GET'])
+@token_required
+def api_areas():
+    areas = Area.query.all()
+    return jsonify([{'id': a.id, 'nombre': a.nombre} for a in areas])
+
+
+@iperc.route('/api/iperc/guardar', methods=['POST'])
+@token_required
+@solo_rol('trabajador', 'supervisor', 'admin')
+def api_guardar():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+
+    area_id      = data.get('area_id')
+    actividad_id = data.get('actividad_id')
+    lat          = data.get('lat')
+    lon          = data.get('lon')
+    geo_validado = data.get('geo_validado', False)
+
+    ahora_lima = datetime.now(LIMA)
+    codigo = f"IPERC-{ahora_lima.strftime('%Y%m%d%H%M%S')}-{current_user.id}"
+
+    registro = RegistroIPERC(
+        codigo=codigo,
+        usuario_id=current_user.id,
+        area_id=area_id,
+        actividad_id=actividad_id,
+        lat=float(lat) if lat else None,
+        lon=float(lon) if lon else None,
+        geo_validado=geo_validado,
+        estado='pendiente',
+    )
+    db.session.add(registro)
+    db.session.commit()
+
+    # Peligros adicionales
+    adicionales = data.get('adicionales', [])
+    for item in adicionales:
+        p   = int(item.get('p', 1))
+        s   = int(item.get('s', 1))
+        pxs = p * s
+        if   pxs <= 4:  nivel = 'TRIVIAL'
+        elif pxs <= 8:  nivel = 'TOLERABLE'
+        elif pxs <= 16: nivel = 'MODERADO'
+        elif pxs <= 24: nivel = 'IMPORTANTE'
+        else:           nivel = 'INTOLERABLE'
+
+        peligro_adic = PeligroAdicional(
+            registro_id=registro.id,
+            tipo=item.get('tipo'),
+            descripcion=item.get('descripcion'),
+            riesgo_consecuencia=item.get('riesgo'),
+            p_sin=p, s_sin=s, nivel_sin=nivel,
+            medidas_control=item.get('medidas'),
+            p_con=p, s_con=s, nivel_con=nivel,
+        )
+        db.session.add(peligro_adic)
+    db.session.commit()
+
+    return jsonify({
+        'mensaje': 'IPERC registrado exitosamente',
+        'registro_id': registro.id,
+        'codigo': registro.codigo
+    }), 201
+
+
+@iperc.route('/api/iperc/firma', methods=['POST'])
+@token_required
+def api_guardar_firma():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+
+    firma = FirmaDigital(
+        registro_id=data.get('registro_id'),
+        usuario_id=current_user.id,
+        firma_imagen=data.get('firma_data'),
+        lat=float(data.get('lat')) if data.get('lat') else None,
+        lon=float(data.get('lon')) if data.get('lon') else None,
+    )
+    db.session.add(firma)
+    db.session.commit()
+
+    return jsonify({'mensaje': 'Firma registrada correctamente'}), 200
+
+
+@iperc.route('/api/iperc/lista', methods=['GET'])
+@token_required
+def api_lista():
+    if current_user.rol in ['supervisor', 'admin']:
+        registros = RegistroIPERC.query.order_by(
+            RegistroIPERC.id.desc()).limit(50).all()
+    else:
+        registros = RegistroIPERC.query.filter_by(
+            usuario_id=current_user.id).order_by(
+            RegistroIPERC.id.desc()).limit(50).all()
+
+    return jsonify([{
+        'id': r.id,
+        'codigo': r.codigo,
+        'area': r.area.nombre if r.area else '',
+        'actividad': r.actividad.nombre if r.actividad else '',
+        'estado': r.estado,
+        'geo_validado': r.geo_validado,
+        'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else ''
+    } for r in registros]), 200
+
+
+@iperc.route('/api/actividades/<int:area_id>', methods=['GET'])
+@token_required
+def api_actividades(area_id):
+    actividades = Actividad.query.filter_by(area_id=area_id).all()
+    return jsonify([{'id': a.id, 'nombre': a.nombre} for a in actividades])
+
+@iperc.route('/api/peligros/<int:actividad_id>', methods=['GET'])
+@token_required
+def api_peligros(actividad_id):
+    peligros = PeligroBase.query.filter_by(actividad_id=actividad_id).all()
+    return jsonify([{
+        'id': p.id,
+        'descripcion': p.descripcion,
+        'riesgo': p.riesgo_consecuencia,
+        'p_sin': p.p_sin,
+        's_sin': p.s_sin,
+        'nivel_sin': p.nivel_sin,
+        'medidas': p.medidas_control,
+        'p_con': p.p_con,
+        's_con': p.s_con,
+        'nivel_con': p.nivel_con
+    } for p in peligros])

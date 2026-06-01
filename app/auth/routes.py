@@ -77,3 +77,52 @@ def cambiar_clave():
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
+
+
+# ─────────────────────────────────────────
+# API REST para Android
+# ─────────────────────────────────────────
+from flask import jsonify
+import jwt 
+import datetime
+from flask import current_app
+
+@auth.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+
+    ip = request.remote_addr
+
+    # Rate limiting igual que el login web
+    if ip_bloqueada(ip):
+        return jsonify({'error': 'Demasiados intentos. Espera 5 minutos'}), 429
+
+    dni      = data.get('dni', '').strip()
+    password = data.get('password', '')
+
+    usuario = Usuario.query.filter_by(dni=dni, activo=True).first()
+
+    if usuario and bcrypt.checkpw(password.encode('utf-8'), usuario.password_hash):
+        # Limpiar intentos
+        from app import _intentos, _lock
+        with _lock:
+            _intentos[ip] = []
+
+        # Generar token JWT
+        token = jwt.encode({
+            'user_id': usuario.id,
+            'rol': usuario.rol,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+        }, current_app.config['SECRET_KEY'], algorithm='HS256')
+
+        return jsonify({
+            'token': token,
+            'rol': usuario.rol,
+            'nombre': usuario.nombre,
+            'debe_cambiar_clave': usuario.debe_cambiar_clave
+        }), 200
+
+    registrar_intento(ip)
+    return jsonify({'error': 'DNI o contraseña incorrectos'}), 401
