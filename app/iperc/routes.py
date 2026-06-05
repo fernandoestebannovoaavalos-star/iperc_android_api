@@ -251,7 +251,7 @@ def api_guardar_firma():
     firma = FirmaDigital(
         registro_id=data.get('registro_id'),
         usuario_id=current_user.id,
-        firma_imagen=data.get('firma_data'),
+        firma_imagen=data.get('firma_base64'),  # ← cambio: firma_data → firma_base64
         lat=float(data.get('lat')) if data.get('lat') else None,
         lon=float(data.get('lon')) if data.get('lon') else None,
     )
@@ -259,7 +259,6 @@ def api_guardar_firma():
     db.session.commit()
 
     return jsonify({'mensaje': 'Firma registrada correctamente'}), 200
-
 
 @iperc.route('/api/iperc/lista', methods=['GET'])
 @token_required
@@ -305,3 +304,152 @@ def api_peligros(actividad_id):
         's_con': p.s_con,
         'nivel_con': p.nivel_con
     } for p in peligros])
+
+
+@iperc.route('/api/iperc/detalle/<int:id>', methods=['GET'])
+@token_required
+def api_detalle(id):
+    from app.models import PeligroBase, PeligroAdicional, Usuario
+    r = RegistroIPERC.query.get_or_404(id)
+    peligros = PeligroBase.query.filter_by(actividad_id=r.actividad_id).all()
+    adicionales = PeligroAdicional.query.filter_by(registro_id=id).all()
+    u = Usuario.query.get(r.usuario_id)
+    return jsonify({
+        'id': r.id,
+        'codigo': r.codigo,
+        'trabajador': f"{u.nombre} {u.apellido}" if u else '—',
+        'area': r.area.nombre if r.area else '',
+        'actividad': r.actividad.nombre if r.actividad else '',
+        'estado': r.estado,
+        'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else '',
+        'geo_validado': r.geo_validado,
+        'peligros': [{
+            'descripcion': p.descripcion,
+            'riesgo': p.riesgo_consecuencia,
+            'nivel_sin': p.nivel_sin,
+            'medidas': p.medidas_control,
+            'nivel_con': p.nivel_con
+        } for p in peligros],
+        'adicionales': [{
+            'descripcion': p.descripcion,
+            'nivel_sin': p.nivel_sin,
+            'medidas': p.medidas_control,
+            'nivel_con': p.nivel_con
+        } for p in adicionales]
+    }), 200
+
+@iperc.route('/api/supervisor/pendientes', methods=['GET'])
+@token_required
+def supervisor_pendientes():
+    from app.models import Usuario
+    registros = RegistroIPERC.query.filter_by(estado='pendiente').order_by(
+        RegistroIPERC.id.desc()).all()
+    resultado = []
+    for r in registros:
+        u = Usuario.query.get(r.usuario_id)
+        resultado.append({
+            'id': r.id,
+            'trabajador': f"{u.nombre} {u.apellido}" if u else '—',
+            'area': r.area.nombre if r.area else '',
+            'actividad': r.actividad.nombre if r.actividad else '',
+            'estado': r.estado,
+            'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else ''
+        })
+    return jsonify(resultado), 200
+
+@iperc.route('/api/supervisor/todos', methods=['GET'])
+@token_required
+def supervisor_todos():
+    from app.models import Usuario
+    registros = RegistroIPERC.query.order_by(
+        RegistroIPERC.id.desc()).limit(50).all()
+    resultado = []
+    for r in registros:
+        u = Usuario.query.get(r.usuario_id)
+        resultado.append({
+            'id': r.id,
+            'trabajador': f"{u.nombre} {u.apellido}" if u else '—',
+            'area': r.area.nombre if r.area else '',
+            'actividad': r.actividad.nombre if r.actividad else '',
+            'estado': r.estado,
+            'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else ''
+        })
+    return jsonify(resultado), 200
+
+@iperc.route('/api/supervisor/aprobar/<int:id>', methods=['POST'])
+@token_required
+def supervisor_aprobar(id):
+    r = RegistroIPERC.query.get_or_404(id)
+    if r.estado != 'pendiente':
+        return jsonify({'error': 'Registro ya procesado'}), 400
+    r.estado = 'aprobado'
+    db.session.commit()
+    return jsonify({'mensaje': 'Aprobado'}), 200
+
+@iperc.route('/api/supervisor/observar/<int:id>', methods=['POST'])
+@token_required
+def supervisor_observar(id):
+    data = request.get_json()
+    r = RegistroIPERC.query.get_or_404(id)
+    if r.estado != 'pendiente':
+        return jsonify({'error': 'Registro ya procesado'}), 400
+    r.estado = 'observado'
+    r.observacion = data.get('observacion', '')
+    db.session.commit()
+    return jsonify({'mensaje': 'Observación guardada'}), 200
+
+
+@iperc.route('/api/supervisor/aprobar_con_firma/<int:id>', methods=['POST'])
+@token_required
+def supervisor_aprobar_con_firma(id):
+    data = request.get_json()
+    r = RegistroIPERC.query.get_or_404(id)
+    if r.estado != 'pendiente':
+        return jsonify({'error': 'Registro ya procesado'}), 400
+
+    firma_base64 = data.get('firma_base64')
+    if firma_base64:
+        FirmaDigital.query.filter_by(registro_id=id, tipo='supervisor').delete()
+        firma = FirmaDigital(
+            registro_id=id,
+            usuario_id=current_user.id,
+            firma_imagen=firma_base64,
+            tipo='supervisor',
+            lat=r.lat,
+            lon=r.lon
+        )
+        db.session.add(firma)
+
+    r.estado = 'aprobado'
+    db.session.commit()
+    return jsonify({'mensaje': 'IPERC aprobado con firma del supervisor'}), 200
+
+
+@iperc.route('/api/iperc/pdf/<int:id>', methods=['GET'])
+@token_required
+def api_pdf(id):
+    from app.models import PeligroBase, PeligroAdicional, FirmaDigital
+    from app.reportes.generador import generar_pdf_iperc
+    from flask import send_file
+
+    r = RegistroIPERC.query.get_or_404(id)
+
+    peligros         = PeligroBase.query.filter_by(actividad_id=r.actividad_id).all()
+    adicionales      = PeligroAdicional.query.filter_by(registro_id=id).all()
+    firma_trabajador = FirmaDigital.query.filter_by(
+                           registro_id=id, tipo='trabajador').first()
+    firma_supervisor = FirmaDigital.query.filter_by(
+                           registro_id=id, tipo='supervisor').first()
+
+    buffer = generar_pdf_iperc(
+        r, peligros, firma_trabajador,
+        peligros_adicionales=adicionales,
+        firma_supervisor=firma_supervisor
+    )
+
+    return send_file(
+        buffer,
+        mimetype='application/pdf',
+        as_attachment=False,
+        download_name=f'{r.codigo}.pdf'
+    )

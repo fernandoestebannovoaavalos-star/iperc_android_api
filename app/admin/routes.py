@@ -202,3 +202,70 @@ def estadisticas():
         total_aprobados=RegistroIPERC.query.filter_by(estado='aprobado').count(),
         total_pendientes=RegistroIPERC.query.filter_by(estado='pendiente').count(),
         total_usuarios=Usuario.query.count())
+
+# ─────────────────────────────────────────
+# API REST para Android
+# ─────────────────────────────────────────
+from flask import jsonify
+from app import token_required
+
+@admin.route('/api/admin/usuarios', methods=['GET'])
+@token_required
+@solo_rol('admin')
+def api_listar_usuarios():
+    usuarios = Usuario.query.order_by(Usuario.created_at.desc()).all()
+    return jsonify([{
+        'id': u.id,
+        'nombre': u.nombre,
+        'apellido': u.apellido,
+        'dni': u.dni,
+        'rol': u.rol,
+        'activo': u.activo
+    } for u in usuarios]), 200
+
+@admin.route('/api/admin/crear_usuario', methods=['POST'])
+@token_required
+@solo_rol('admin')
+def api_crear_usuario():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+
+    nombre   = data.get('nombre', '').strip()
+    apellido = data.get('apellido', '').strip()
+    dni      = data.get('dni', '').strip()
+    password = data.get('password', '').strip()
+    rol      = data.get('rol', 'trabajador')
+
+    if not nombre or not apellido or not dni or not password:
+        return jsonify({'error': 'Nombre, apellido, DNI y contraseña son obligatorios'}), 400
+
+    if len(password) < 8:
+        return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
+
+    if Usuario.query.filter_by(dni=dni).first():
+        return jsonify({'error': f'El DNI {dni} ya está registrado'}), 409
+
+    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    usuario = Usuario(
+        nombre=nombre,
+        apellido=apellido,
+        dni=dni,
+        rol=rol,
+        password_hash=password_hash,
+        activo=True,
+        debe_cambiar_clave=False
+    )
+    db.session.add(usuario)
+    db.session.commit()
+    return jsonify({'mensaje': f'Usuario {nombre} {apellido} creado correctamente'}), 201
+
+@admin.route('/api/admin/toggle_usuario/<int:id>', methods=['POST'])
+@token_required
+@solo_rol('admin')
+def api_toggle_usuario(id):
+    usuario = Usuario.query.get_or_404(id)
+    usuario.activo = not usuario.activo
+    db.session.commit()
+    estado = 'activado' if usuario.activo else 'desactivado'
+    return jsonify({'mensaje': f'Usuario {estado}', 'activo': usuario.activo}), 200
