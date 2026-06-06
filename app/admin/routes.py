@@ -236,6 +236,7 @@ def api_crear_usuario():
     dni      = data.get('dni', '').strip()
     password = data.get('password', '').strip()
     rol      = data.get('rol', 'trabajador')
+    email    = data.get('email', None)
 
     if not nombre or not apellido or not dni or not password:
         return jsonify({'error': 'Nombre, apellido, DNI y contraseña son obligatorios'}), 400
@@ -246,19 +247,24 @@ def api_crear_usuario():
     if Usuario.query.filter_by(dni=dni).first():
         return jsonify({'error': f'El DNI {dni} ya está registrado'}), 409
 
+    if email and Usuario.query.filter_by(email=email).first():
+        return jsonify({'error': 'El correo ya está registrado'}), 409
+
     password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     usuario = Usuario(
         nombre=nombre,
         apellido=apellido,
         dni=dni,
+        email=email,
         rol=rol,
         password_hash=password_hash,
         activo=True,
-        debe_cambiar_clave=False
+        debe_cambiar_clave=True  # ← cambiado a True
     )
     db.session.add(usuario)
     db.session.commit()
-    return jsonify({'mensaje': f'Usuario {nombre} {apellido} creado correctamente'}), 201
+    return jsonify({'mensaje': f'Usuario {nombre} {apellido} creado. Debe cambiar su contraseña al iniciar sesión.'}), 201
+
 
 @admin.route('/api/admin/toggle_usuario/<int:id>', methods=['POST'])
 @token_required
@@ -269,3 +275,16 @@ def api_toggle_usuario(id):
     db.session.commit()
     estado = 'activado' if usuario.activo else 'desactivado'
     return jsonify({'mensaje': f'Usuario {estado}', 'activo': usuario.activo}), 200
+
+@admin.route('/api/admin/cambiar_rol/<int:id>', methods=['POST'])
+@token_required
+@solo_rol('admin')
+def api_cambiar_rol(id):
+    data = request.get_json()
+    usuario = Usuario.query.get_or_404(id)
+    nuevo_rol = data.get('rol')
+    if nuevo_rol not in ['trabajador', 'supervisor', 'admin']:
+        return jsonify({'error': 'Rol inválido'}), 400
+    usuario.rol = nuevo_rol
+    db.session.commit()
+    return jsonify({'mensaje': f'Rol cambiado a {nuevo_rol}'}), 200

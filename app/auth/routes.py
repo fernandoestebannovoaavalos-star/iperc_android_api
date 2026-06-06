@@ -4,6 +4,7 @@ from app.auth import auth
 from app.models import Usuario, Cargo, Obra
 from app import db, registrar_intento, ip_bloqueada
 import bcrypt
+from app import db, registrar_intento, ip_bloqueada, token_required
 
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -126,3 +127,19 @@ def api_login():
 
     registrar_intento(ip)
     return jsonify({'error': 'DNI o contraseña incorrectos'}), 401
+
+@auth.route('/api/cambiar_clave', methods=['POST'])
+@token_required
+def api_cambiar_clave():
+    data = request.get_json()
+    nueva = data.get('nueva_clave', '').strip()
+    
+    if len(nueva) < 8:
+        return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
+    
+    import bcrypt
+    current_user.password_hash = bcrypt.hashpw(nueva.encode('utf-8'), bcrypt.gensalt())
+    current_user.debe_cambiar_clave = False
+    db.session.commit()
+    
+    return jsonify({'mensaje': 'Contraseña actualizada correctamente'}), 200
