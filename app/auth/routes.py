@@ -133,13 +133,18 @@ def api_login():
 def api_cambiar_clave():
     data = request.get_json()
     nueva = data.get('nueva_clave', '').strip()
-    
+    clave_actual = data.get('clave_actual', '').strip()
+
+    # Si viene clave_actual, validarla (cambio desde perfil)
+    if clave_actual:
+        if not bcrypt.checkpw(clave_actual.encode('utf-8'), current_user.password_hash):
+            return jsonify({'error': 'La contraseña actual es incorrecta'}), 400
+
     if len(nueva) < 8:
         return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
-    
-    import bcrypt
+
     current_user.password_hash = bcrypt.hashpw(nueva.encode('utf-8'), bcrypt.gensalt())
     current_user.debe_cambiar_clave = False
     db.session.commit()
-    
+
     return jsonify({'mensaje': 'Contraseña actualizada correctamente'}), 200

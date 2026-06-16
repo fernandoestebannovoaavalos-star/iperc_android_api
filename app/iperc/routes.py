@@ -279,6 +279,7 @@ def api_lista():
         'estado': r.estado,
         'geo_validado': r.geo_validado,
         'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else ''
+        'observacion': r.observacion or ''
     } for r in registros]), 200
 
 
@@ -330,12 +331,15 @@ def api_detalle(id):
             'medidas': p.medidas_control,
             'nivel_con': p.nivel_con
         } for p in peligros],
-        'adicionales': [{
-            'descripcion': p.descripcion,
-            'nivel_sin': p.nivel_sin,
-            'medidas': p.medidas_control,
-            'nivel_con': p.nivel_con
-        } for p in adicionales]
+
+       'adicionales': [{
+             'descripcion': p.descripcion,
+             'riesgo': p.riesgo_consecuencia,
+             'nivel_sin': p.nivel_sin,
+             'medidas': p.medidas_control,
+             'nivel_con': p.nivel_con
+        }   for p in adicionales]
+
     }), 200
 
 @iperc.route('/api/supervisor/pendientes', methods=['GET'])
@@ -421,6 +425,34 @@ def supervisor_aprobar_con_firma(id):
         db.session.add(firma)
 
     r.estado = 'aprobado'
+    r.supervisor_id = current_user.id  # ← agrega esta línea
+
+    # Notificación por email al trabajador
+    try:
+        from flask_mail import Message
+        from app import mail
+        from app.models import Usuario
+        trabajador = Usuario.query.get(r.usuario_id)
+        if trabajador and trabajador.email:
+            msg = Message(
+                subject=f'✅ IPERC {r.codigo} aprobado',
+                recipients=[trabajador.email],
+                html=f'''
+                <h2 style="color:#16a34a;">IPERC Digital — Registro Aprobado</h2>
+                <p>Tu registro IPERC ha sido revisado y aprobado por el supervisor.</p>
+                <table border="1" cellpadding="8" style="border-collapse:collapse;">
+                    <tr><td><b>Código</b></td><td>{r.codigo}</td></tr>
+                    <tr><td><b>Área</b></td><td>{r.area.nombre}</td></tr>
+                    <tr><td><b>Actividad</b></td><td>{r.actividad.nombre}</td></tr>
+                    <tr><td><b>Supervisor</b></td><td>{current_user.nombre} {current_user.apellido}</td></tr>
+                </table>
+                <p style="color:#999;font-size:12px;">IPERC Digital · UPN Cajamarca 2026</p>
+                '''
+            )
+            mail.send(msg)
+    except Exception as e:
+        print(f"Error enviando email: {e}")
+
     db.session.commit()
     return jsonify({'mensaje': 'IPERC aprobado con firma del supervisor'}), 200
 
@@ -453,3 +485,37 @@ def api_pdf(id):
         as_attachment=False,
         download_name=f'{r.codigo}.pdf'
     )
+
+@iperc.route('/api/iperc/adicionales', methods=['POST'])
+@token_required
+def api_guardar_adicionales():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+
+    registro_id = data.get('registro_id')
+    adicionales = data.get('adicionales', [])
+
+    for item in adicionales:
+        p   = int(item.get('p', 1))
+        s   = int(item.get('s', 1))
+        pxs = p * s
+        if   pxs <= 4:  nivel = 'TRIVIAL'
+        elif pxs <= 8:  nivel = 'TOLERABLE'
+        elif pxs <= 16: nivel = 'MODERADO'
+        elif pxs <= 24: nivel = 'IMPORTANTE'
+        else:           nivel = 'INTOLERABLE'
+
+        peligro_adic = PeligroAdicional(
+            registro_id=registro_id,
+            tipo=item.get('tipo'),
+            descripcion=item.get('descripcion'),
+            riesgo_consecuencia=item.get('riesgo'),
+            p_sin=p, s_sin=s, nivel_sin=nivel,
+            medidas_control=item.get('medidas'),
+            p_con=p, s_con=s, nivel_con=nivel,
+        )
+        db.session.add(peligro_adic)
+
+    db.session.commit()
+    return jsonify({'mensaje': 'Peligros adicionales guardados'}), 201

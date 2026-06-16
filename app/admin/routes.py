@@ -288,3 +288,21 @@ def api_cambiar_rol(id):
     usuario.rol = nuevo_rol
     db.session.commit()
     return jsonify({'mensaje': f'Rol cambiado a {nuevo_rol}'}), 200
+
+
+@admin.route('/api/admin/resetear_clave/<int:id>', methods=['POST'])
+@token_required
+@solo_rol('admin')
+def api_resetear_clave(id):
+    data = request.get_json()
+    usuario = Usuario.query.get_or_404(id)
+    nueva_clave = data.get('nueva_clave', '').strip()
+
+    if len(nueva_clave) < 8:
+        return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
+
+    usuario.password_hash = bcrypt.hashpw(nueva_clave.encode('utf-8'), bcrypt.gensalt())
+    usuario.debe_cambiar_clave = True
+    db.session.commit()
+
+    return jsonify({'mensaje': f'Contraseña de {usuario.nombre} reseteada correctamente'}), 200

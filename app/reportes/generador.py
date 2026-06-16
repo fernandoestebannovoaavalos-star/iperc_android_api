@@ -235,7 +235,7 @@ def generar_pdf_iperc(registro, peligros, firma=None,
     elementos.append(Paragraph(
         'EMPRESA CONSTRUCTORA — CLÍNICA LA LUZ · CAJAMARCA', estilo_titulo))
     elementos.append(Paragraph(
-        'IPERC CONTINUO — ANÁLISIS DE TRABAJO SEGURO', estilo_titulo))
+        'IPERC CONTINUO', estilo_titulo))
     elementos.append(Paragraph(
         'Ley N° 29783 · DS 005-2012-TR · Norma G.050', estilo_subtitulo))
     elementos.append(Spacer(1, 0.3*cm))
