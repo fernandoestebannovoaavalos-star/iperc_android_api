@@ -278,8 +278,8 @@ def api_lista():
         'actividad': r.actividad.nombre if r.actividad else '',
         'estado': r.estado,
         'geo_validado': r.geo_validado,
-        'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else ''
-        'observacion': r.observacion or ''
+        'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else '',
+        'observacion': r.observacion or '',
     } for r in registros]), 200
 
 
