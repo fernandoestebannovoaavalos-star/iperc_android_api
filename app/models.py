@@ -103,6 +103,7 @@ class RegistroIPERC(db.Model):
     area_id       = db.Column(db.Integer,    db.ForeignKey('areas.id'),       nullable=False)
     actividad_id  = db.Column(db.Integer,    db.ForeignKey('actividades.id'), nullable=False)
     estado        = db.Column(db.String(20), default='pendiente')
+    observacion   = db.Column(db.Text,       nullable=True)
     lat           = db.Column(db.Float,      nullable=True)
     lon           = db.Column(db.Float,      nullable=True)
     geo_validado  = db.Column(db.Boolean,    default=False)
