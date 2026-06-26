@@ -31,37 +31,22 @@ def generar_pdf(registro_id):
                      download_name=f'{registro.codigo}.pdf')
 
 
-# ── API REPORTES FILTRADOS ─────────────────────────────────────────────────────
+# ── API REPORTES FILTRADOS ────────────────────────────────────────────────────
 
 @reportes.route('/api/reportes', methods=['GET'])
 @token_required
 def api_reportes():
-    """
-    Parámetros opcionales:
-      - estado: pendiente | aprobado | observado
-      - fecha_inicio: YYYY-MM-DD
-      - fecha_fin:    YYYY-MM-DD
-      - obra_id:      int
-    """
-    estado      = request.args.get('estado', '')
-    fecha_ini   = request.args.get('fecha_inicio', '')
-    fecha_fin   = request.args.get('fecha_fin', '')
-    obra_id     = request.args.get('obra_id', '')
+    estado    = request.args.get('estado', '')
+    fecha_ini = request.args.get('fecha_inicio', '')
+    fecha_fin = request.args.get('fecha_fin', '')
 
     query = RegistroIPERC.query
 
-    # Filtro por rol: trabajador solo ve los suyos
     if current_user.rol == 'trabajador':
         query = query.filter_by(usuario_id=current_user.id)
 
     if estado:
         query = query.filter_by(estado=estado)
-
-    if obra_id:
-        try:
-            query = query.filter_by(obra_id=int(obra_id))
-        except ValueError:
-            pass
 
     if fecha_ini:
         try:
@@ -82,26 +67,26 @@ def api_reportes():
     resultado = []
     for r in registros:
         resultado.append({
-            'id':          r.id,
-            'codigo':      r.codigo,
-            'trabajador':  r.usuario.nombre + ' ' + r.usuario.apellido,
-            'area':        r.area.nombre if r.area else '',
-            'actividad':   r.actividad.nombre if r.actividad else '',
-            'estado':      r.estado,
-            'nivel_riesgo': r.nivel_riesgo or '',
-            'fecha':       r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else '',
-            'obra':        r.obra.nombre if r.obra else '',
+            'id':         r.id,
+            'codigo':     r.codigo,
+            'trabajador': r.registrado_por.nombre + ' ' + r.registrado_por.apellido,
+            'area':       r.area.nombre if r.area else '',
+            'actividad':  r.actividad.nombre if r.actividad else '',
+            'estado':     r.estado,
+            'fecha':      r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else '',
+            'observacion': r.observacion or '',
         })
 
     return jsonify(resultado)
 
 
+# ── API ESTADÍSTICAS ──────────────────────────────────────────────────────────
+
 @reportes.route('/api/estadisticas', methods=['GET'])
 @token_required
 def api_estadisticas():
-    """Datos para gráficos del dashboard de estadísticas."""
     from sqlalchemy import func
-    from app.models import Usuario
+    from datetime import timedelta
 
     # 1. Registros por estado
     por_estado = db.session.query(
@@ -109,14 +94,15 @@ def api_estadisticas():
         func.count(RegistroIPERC.id)
     ).group_by(RegistroIPERC.estado).all()
 
-    # 2. Registros por nivel de riesgo
-    por_nivel = db.session.query(
-        RegistroIPERC.nivel_riesgo,
+    # 2. Registros por área
+    from app.models import Area
+    por_area = db.session.query(
+        Area.nombre,
         func.count(RegistroIPERC.id)
-    ).group_by(RegistroIPERC.nivel_riesgo).all()
+    ).join(RegistroIPERC, RegistroIPERC.area_id == Area.id)\
+     .group_by(Area.nombre).all()
 
-    # 3. Últimos 7 días — registros por día
-    from datetime import timedelta
+    # 3. Últimos 7 días
     hoy = datetime.utcnow().date()
     por_dia = []
     for i in range(6, -1, -1):
@@ -126,12 +112,18 @@ def api_estadisticas():
         ).count()
         por_dia.append({'dia': dia.strftime('%d/%m'), 'total': count})
 
-    # 4. Total general
-    total = RegistroIPERC.query.count()
+    # 4. Totales
+    total      = RegistroIPERC.query.count()
+    aprobados  = RegistroIPERC.query.filter_by(estado='aprobado').count()
+    pendientes = RegistroIPERC.query.filter_by(estado='pendiente').count()
+    observados = RegistroIPERC.query.filter_by(estado='observado').count()
 
     return jsonify({
-        'total': total,
+        'total':      total,
+        'aprobados':  aprobados,
+        'pendientes': pendientes,
+        'observados': observados,
         'por_estado': [{'estado': e, 'total': c} for e, c in por_estado],
-        'por_nivel':  [{'nivel': n or 'Sin nivel', 'total': c} for n, c in por_nivel],
+        'por_area':   [{'nivel': a, 'total': c} for a, c in por_area],
         'por_dia':    por_dia,
     })
