@@ -306,3 +306,90 @@ def api_resetear_clave(id):
     db.session.commit()
 
     return jsonify({'mensaje': f'Contraseña de {usuario.nombre} reseteada correctamente'}), 200
+
+# ── API OBRAS ─────────────────────────────────────────────────────────────────
+
+@admin.route('/api/admin/obras', methods=['GET'])
+@token_required
+@solo_rol('admin')
+def api_listar_obras():
+    obras = Obra.query.order_by(Obra.nombre).all()
+    return jsonify([{
+        'id':        o.id,
+        'nombre':    o.nombre,
+        'empresa':   o.empresa or '',
+        'direccion': o.direccion or '',
+        'lat':       float(o.lat_centro) if o.lat_centro else None,
+        'lon':       float(o.lon_centro) if o.lon_centro else None,
+        'radio':     o.radio_perimetro or 100,
+        'activo':    o.activo,
+    } for o in obras]), 200
+
+
+@admin.route('/api/admin/obras/nueva', methods=['POST'])
+@token_required
+@solo_rol('admin')
+def api_nueva_obra():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+
+    nombre    = data.get('nombre', '').strip()
+    empresa   = data.get('empresa', '').strip()
+    direccion = data.get('direccion', '').strip()
+    lat       = data.get('lat')
+    lon       = data.get('lon')
+    radio     = data.get('radio', 100)
+
+    if not nombre:
+        return jsonify({'error': 'El nombre es obligatorio'}), 400
+
+    if Obra.query.filter_by(nombre=nombre).first():
+        return jsonify({'error': f'Ya existe una obra con el nombre "{nombre}"'}), 409
+
+    obra = Obra(
+        nombre=nombre,
+        empresa=empresa,
+        direccion=direccion,
+        lat_centro=float(lat) if lat else None,
+        lon_centro=float(lon) if lon else None,
+        radio_perimetro=int(radio),
+        activo=True
+    )
+    db.session.add(obra)
+    db.session.commit()
+    return jsonify({'mensaje': f'Obra "{nombre}" creada correctamente', 'id': obra.id}), 201
+
+
+@admin.route('/api/admin/obras/toggle/<int:id>', methods=['POST'])
+@token_required
+@solo_rol('admin')
+def api_toggle_obra(id):
+    obra = Obra.query.get_or_404(id)
+    obra.activo = not obra.activo
+    db.session.commit()
+    estado = 'activada' if obra.activo else 'desactivada'
+    return jsonify({'mensaje': f'Obra "{obra.nombre}" {estado}', 'activo': obra.activo}), 200
+
+
+@admin.route('/api/admin/obras/editar/<int:id>', methods=['POST'])
+@token_required
+@solo_rol('admin')
+def api_editar_obra(id):
+    obra = Obra.query.get_or_404(id)
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+
+    obra.nombre    = data.get('nombre', obra.nombre).strip()
+    obra.empresa   = data.get('empresa', obra.empresa or '').strip()
+    obra.direccion = data.get('direccion', obra.direccion or '').strip()
+    if data.get('lat'):
+        obra.lat_centro = float(data['lat'])
+    if data.get('lon'):
+        obra.lon_centro = float(data['lon'])
+    if data.get('radio'):
+        obra.radio_perimetro = int(data['radio'])
+
+    db.session.commit()
+    return jsonify({'mensaje': f'Obra "{obra.nombre}" actualizada correctamente'}), 200
