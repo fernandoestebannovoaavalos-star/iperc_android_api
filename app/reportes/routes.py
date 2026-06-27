@@ -124,6 +124,6 @@ def api_estadisticas():
         'pendientes': pendientes,
         'observados': observados,
         'por_estado': [{'estado': e, 'total': c} for e, c in por_estado],
-        'por_area':   [{'nivel': a, 'total': c} for a, c in por_area],
+        'por_area':   [{'area': a, 'total': c} for a, c in por_area],
         'por_dia':    por_dia,
     })
