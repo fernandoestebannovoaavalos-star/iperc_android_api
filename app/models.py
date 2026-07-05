@@ -154,3 +154,15 @@ class PeligroAdicional(db.Model):
     nivel_con           = db.Column(db.String(20), nullable=False)
     # FIX 1: utcnow deprecado → _ahora_utc
     created_at          = db.Column(db.DateTime(timezone=True), default=_ahora_lima)
+
+
+
+class RegistroPeligro(db.Model):
+    __tablename__ = 'registros_peligros'
+    id              = db.Column(db.Integer, primary_key=True)
+    registro_id     = db.Column(db.Integer, db.ForeignKey('registros_iperc.id'), nullable=False)
+    peligro_base_id = db.Column(db.Integer, db.ForeignKey('peligros_base.id'),   nullable=False)
+    p_sin           = db.Column(db.Integer, nullable=False)
+    s_sin           = db.Column(db.Integer, nullable=False)
+    nivel_sin       = db.Column(db.String(20), nullable=False)
+    peligro_base    = db.relationship('PeligroBase', foreign_keys=[peligro_base_id])

@@ -8,6 +8,16 @@ from app import db, solo_rol, token_required
 # Zona horaria Lima / Cajamarca (UTC-5)
 LIMA = timezone(timedelta(hours=-5))
 
+def _calcular_nivel(p, s):
+    MATRIZ = {
+        (1,1):'MUY BAJO', (1,2):'MUY BAJO', (1,3):'BAJO',    (1,4):'MEDIO',   (1,5):'MEDIO',
+        (2,1):'MUY BAJO', (2,2):'BAJO',     (2,3):'MEDIO',   (2,4):'MEDIO',   (2,5):'ALTO',
+        (3,1):'BAJO',     (3,2):'MEDIO',    (3,3):'MEDIO',   (3,4):'ALTO',    (3,5):'MUY ALTO',
+        (4,1):'MEDIO',    (4,2):'MEDIO',    (4,3):'ALTO',    (4,4):'MUY ALTO',(4,5):'EXTREMO',
+        (5,1):'MEDIO',    (5,2):'ALTO',     (5,3):'MUY ALTO',(5,4):'EXTREMO', (5,5):'EXTREMO',
+    }
+    return MATRIZ.get((int(p), int(s)), 'MEDIO')
+
 
 @iperc.route('/iperc/nuevo')
 @login_required
@@ -193,6 +203,8 @@ def api_guardar():
     lat          = data.get('lat')
     lon          = data.get('lon')
     geo_validado = data.get('geo_validado', False)
+    peligros     = data.get('peligros', [])
+    adicionales  = data.get('adicionales', [])
 
     ahora_lima = datetime.now(LIMA)
     codigo = f"IPERC-{ahora_lima.strftime('%Y%m%d%H%M%S')}-{current_user.id}"
@@ -208,19 +220,29 @@ def api_guardar():
         estado='pendiente',
     )
     db.session.add(registro)
-    db.session.commit()
+    db.session.flush()  # obtiene registro.id sin hacer commit
 
-    # Peligros adicionales
-    adicionales = data.get('adicionales', [])
+    # ── Guardar peligros base seleccionados ───────────────────────────
+    for item in peligros:
+        peligro_id = item.get('peligro_id')
+        p = int(item.get('p', 1))
+        s = int(item.get('s', 1))
+        nivel = _calcular_nivel(p, s)
+        if peligro_id:
+            from app.models import RegistroPeligro
+            rp = RegistroPeligro(
+                registro_id=registro.id,
+                peligro_base_id=int(peligro_id),
+                p_sin=p, s_sin=s, nivel_sin=nivel,
+                p_con=p, s_con=s, nivel_con=nivel
+            )
+            db.session.add(rp)
+
+    # ── Guardar peligros adicionales ──────────────────────────────────
     for item in adicionales:
         p   = int(item.get('p', 1))
         s   = int(item.get('s', 1))
-        pxs = p * s
-        if   pxs <= 4:  nivel = 'TRIVIAL'
-        elif pxs <= 8:  nivel = 'TOLERABLE'
-        elif pxs <= 16: nivel = 'MODERADO'
-        elif pxs <= 24: nivel = 'IMPORTANTE'
-        else:           nivel = 'INTOLERABLE'
+        nivel = _calcular_nivel(p, s)
 
         peligro_adic = PeligroAdicional(
             registro_id=registro.id,
@@ -232,6 +254,7 @@ def api_guardar():
             p_con=p, s_con=s, nivel_con=nivel,
         )
         db.session.add(peligro_adic)
+
     db.session.commit()
 
     return jsonify({
@@ -239,7 +262,6 @@ def api_guardar():
         'registro_id': registro.id,
         'codigo': registro.codigo
     }), 201
-
 
 @iperc.route('/api/iperc/firma', methods=['POST'])
 @token_required
@@ -310,11 +332,33 @@ def api_peligros(actividad_id):
 @iperc.route('/api/iperc/detalle/<int:id>', methods=['GET'])
 @token_required
 def api_detalle(id):
-    from app.models import PeligroBase, PeligroAdicional, Usuario
+    from app.models import RegistroPeligro, PeligroAdicional, Usuario
     r = RegistroIPERC.query.get_or_404(id)
-    peligros = PeligroBase.query.filter_by(actividad_id=r.actividad_id).all()
     adicionales = PeligroAdicional.query.filter_by(registro_id=id).all()
+    registros_peligros = RegistroPeligro.query.filter_by(registro_id=id).all()
     u = Usuario.query.get(r.usuario_id)
+
+    # Si hay peligros guardados en registros_peligros úsalos
+    # si no, carga los peligros base por actividad (compatibilidad)
+    if registros_peligros:
+        peligros_data = [{
+            'descripcion': rp.peligro_base.descripcion,
+            'riesgo': rp.peligro_base.riesgo_consecuencia,
+            'nivel_sin': rp.nivel_sin,
+            'medidas': rp.peligro_base.medidas_control,
+            'nivel_con': rp.peligro_base.nivel_con
+        } for rp in registros_peligros]
+    else:
+        peligros_base = PeligroBase.query.filter_by(
+            actividad_id=r.actividad_id).all()
+        peligros_data = [{
+            'descripcion': p.descripcion,
+            'riesgo': p.riesgo_consecuencia,
+            'nivel_sin': p.nivel_sin,
+            'medidas': p.medidas_control,
+            'nivel_con': p.nivel_con
+        } for p in peligros_base]
+
     return jsonify({
         'id': r.id,
         'codigo': r.codigo,
@@ -324,22 +368,14 @@ def api_detalle(id):
         'estado': r.estado,
         'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else '',
         'geo_validado': r.geo_validado,
-        'peligros': [{
+        'peligros': peligros_data,
+        'adicionales': [{
             'descripcion': p.descripcion,
             'riesgo': p.riesgo_consecuencia,
             'nivel_sin': p.nivel_sin,
             'medidas': p.medidas_control,
             'nivel_con': p.nivel_con
-        } for p in peligros],
-
-       'adicionales': [{
-             'descripcion': p.descripcion,
-             'riesgo': p.riesgo_consecuencia,
-             'nivel_sin': p.nivel_sin,
-             'medidas': p.medidas_control,
-             'nivel_con': p.nivel_con
-        }   for p in adicionales]
-
+        } for p in adicionales]
     }), 200
 
 @iperc.route('/api/supervisor/pendientes', methods=['GET'])
@@ -494,17 +530,29 @@ def api_guardar_adicionales():
         return jsonify({'error': 'Datos inválidos'}), 400
 
     registro_id = data.get('registro_id')
+    peligros    = data.get('peligros', [])
     adicionales = data.get('adicionales', [])
 
+    # ── Guardar peligros base seleccionados ───────────────────────────
+    for item in peligros:
+        peligro_id = item.get('peligro_id')
+        p = int(item.get('p', 1))
+        s = int(item.get('s', 1))
+        nivel = _calcular_nivel(p, s)
+        if peligro_id:
+            from app.models import RegistroPeligro
+            rp = RegistroPeligro(
+                registro_id=registro_id,
+                peligro_base_id=int(peligro_id),
+                p_sin=p, s_sin=s, nivel_sin=nivel,
+            )
+            db.session.add(rp)
+
+    # ── Guardar peligros adicionales ──────────────────────────────────
     for item in adicionales:
         p   = int(item.get('p', 1))
         s   = int(item.get('s', 1))
-        pxs = p * s
-        if   pxs <= 4:  nivel = 'TRIVIAL'
-        elif pxs <= 8:  nivel = 'TOLERABLE'
-        elif pxs <= 16: nivel = 'MODERADO'
-        elif pxs <= 24: nivel = 'IMPORTANTE'
-        else:           nivel = 'INTOLERABLE'
+        nivel = _calcular_nivel(p, s)
 
         peligro_adic = PeligroAdicional(
             registro_id=registro_id,
@@ -518,4 +566,4 @@ def api_guardar_adicionales():
         db.session.add(peligro_adic)
 
     db.session.commit()
-    return jsonify({'mensaje': 'Peligros adicionales guardados'}), 201
+    return jsonify({'mensaje': 'Peligros guardados correctamente'}), 201
