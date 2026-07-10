@@ -368,8 +368,10 @@ def api_detalle(id):
         'estado': r.estado,
         'fecha': r.fecha_registro.strftime('%d/%m/%Y %H:%M') if r.fecha_registro else '',
         'geo_validado': r.geo_validado,
-        'peligros': peligros_data,
-        'adicionales': [{
+         'lat': float(r.lat) if r.lat else None,
+         'lon': float(r.lon) if r.lon else None,
+         'peligros': peligros_data,
+         'adicionales': [{
             'descripcion': p.descripcion,
             'riesgo': p.riesgo_consecuencia,
             'nivel_sin': p.nivel_sin,
